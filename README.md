@@ -66,4 +66,5 @@ src/
 - [ ] Widget de countdown iOS
 - [x] Compartilhar evento por link/QR code
 - [x] Detectar evento duplicado ao importar por link compartilhado
-- [ ] Exportar evento para calendário (.ics)
+- [x] Exportar evento para calendário (.ics)
+- [ ] Editar e remover item do roteiro com gesto de swipe

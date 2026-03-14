@@ -12,6 +12,7 @@ import {
 import { useEventsStore } from '@/stores/events-store'
 import { calculateReadiness } from '@/lib/domain/readiness'
 import { getCountdown } from '@/lib/domain/countdown'
+import { downloadEventCalendar } from '@/lib/domain/calendar'
 import { formatDateLong } from '@/lib/formatters'
 import { EventStatusBadge, EventTypeBadge } from '@/components/events/event-status-badge'
 import { TicketSection } from '@/components/events/ticket-section'
@@ -98,6 +99,22 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     const dup = await duplicateEvent(id)
     toast({ title: 'Evento duplicado', description: 'Redirecionando para o novo evento...' })
     router.push(`/events/${dup.id}`)
+  }
+
+  const handleExportCalendar = () => {
+    try {
+      const fileName = downloadEventCalendar(event)
+      toast({
+        title: 'Arquivo de calendario gerado',
+        description: `${fileName} pronto para importar no app de calendario.`,
+      })
+    } catch (error) {
+      toast({
+        title: 'Nao foi possivel exportar',
+        description: error instanceof Error ? error.message : 'Tente novamente em instantes.',
+        variant: 'destructive',
+      })
+    }
   }
 
   const isPast = countdown.isPast
@@ -294,6 +311,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             {/* Ações */}
             <div className="pt-4 border-t space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Ações</h3>
+              <Button variant="outline" className="w-full justify-start" onClick={handleExportCalendar}>
+                <Calendar className="w-4 h-4 mr-2" />
+                Exportar para calendario (.ics)
+              </Button>
               <ShareEventDialog event={event} />
               <Button variant="outline" className="w-full justify-start" onClick={handleDuplicate}>
                 <Copy className="w-4 h-4 mr-2" />
