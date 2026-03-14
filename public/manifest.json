@@ -1,0 +1,25 @@
+{
+  "name": "Setlist — Seus Shows do Ano",
+  "short_name": "Setlist",
+  "description": "Organize seus shows, festivais e viagens musicais em um só lugar",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a1a",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait",
+  "categories": ["lifestyle", "entertainment"],
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "scope": "/",
+  "id": "setlist-app"
+}

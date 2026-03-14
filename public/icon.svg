@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#7c3aed"/>
+
+  <!-- Headphones icon (centered, white) -->
+  <!-- Arc / headband -->
+  <path
+    d="M160 256c0-52.9 43.1-96 96-96s96 43.1 96 96"
+    stroke="white"
+    stroke-width="28"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <!-- Left ear cup -->
+  <rect x="128" y="256" width="44" height="72" rx="18" fill="white"/>
+  <!-- Right ear cup -->
+  <rect x="340" y="256" width="44" height="72" rx="18" fill="white"/>
+  <!-- Left stem connecting arc to ear cup -->
+  <line x1="152" y1="258" x2="152" y2="270" stroke="white" stroke-width="28" stroke-linecap="round"/>
+  <!-- Right stem connecting arc to ear cup -->
+  <line x1="360" y1="258" x2="360" y2="270" stroke="white" stroke-width="28" stroke-linecap="round"/>
+</svg>

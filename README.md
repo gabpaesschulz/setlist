@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎵 Setlist — Seus Shows do Ano
 
-## Getting Started
+Um PWA pessoal e premium para organizar seus shows, festivais e viagens musicais. Funciona 100% offline, local-first, instalável no iPhone como app nativo.
 
-First, run the development server:
+## Stack
+
+| Tecnologia | Uso |
+|---|---|
+| **Next.js 16** (App Router) | Framework |
+| **TypeScript** | Tipagem forte |
+| **Tailwind CSS v4** | Estilização com CSS variables |
+| **Zustand** | Estado global |
+| **Dexie + IndexedDB** | Persistência local |
+| **React Hook Form + Zod** | Formulários |
+| **date-fns** | Datas em pt-BR |
+| **Framer Motion** | Animações |
+| **Recharts** | Gráficos |
+| **next-themes** | Dark/light mode |
+
+## Como rodar
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Acesse http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Build de produção
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Instalar no iPhone
 
-## Learn More
+1. Abra no **Safari** do iPhone
+2. Toque em **Compartilhar** (ícone □↑)
+3. Toque em **"Adicionar à Tela de Início"**
+4. Toque em **"Adicionar"**
 
-To learn more about Next.js, take a look at the following resources:
+> O app funciona offline. Dados ficam no IndexedDB do dispositivo.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Estrutura
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/            # Rotas (/, /events, /expenses, /insights, /settings)
+├── components/     # UI components (dashboard, events, shared, ui/)
+├── stores/         # Zustand stores
+├── lib/
+│   ├── db/         # Dexie database + CRUD
+│   ├── domain/     # Lógica de negócio pura
+│   ├── demo/       # Dados de demonstração
+│   └── formatters/ # Formatação pt-BR
+├── schemas/        # Zod schemas
+└── types/          # TypeScript types
+```
 
-## Deploy on Vercel
+## Roadmap
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [ ] Sync via iCloud/Google Drive
+- [ ] Notificações push (D-7, D-1)
+- [ ] Upload de imagem de capa
+- [ ] Importação do Sympla/Eventim via URL
+- [ ] Widget de countdown iOS
