@@ -12,9 +12,7 @@ import {
 import { useEventsStore } from '@/stores/events-store'
 import { calculateReadiness } from '@/lib/domain/readiness'
 import { getCountdown } from '@/lib/domain/countdown'
-import { formatDateLong, formatCurrency } from '@/lib/formatters'
-import { EVENT_TYPES } from '@/lib/constants'
-import { ReadinessBar } from '@/components/events/readiness-bar'
+import { formatDateLong } from '@/lib/formatters'
 import { EventStatusBadge, EventTypeBadge } from '@/components/events/event-status-badge'
 import { TicketSection } from '@/components/events/ticket-section'
 import { TravelSection } from '@/components/events/travel-section'
@@ -23,6 +21,7 @@ import { ExpensesSection } from '@/components/events/expenses-section'
 import { ItinerarySection } from '@/components/events/itinerary-section'
 import { ChecklistSection } from '@/components/events/checklist-section'
 import { ReflectionSection } from '@/components/events/reflection-section'
+import { ShareEventDialog } from '@/components/events/share-event-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -79,7 +78,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const countdown = getCountdown(event.date, event.time)
   const readiness = calculateReadiness({ event, ticket, travel, lodging, expenses: eventExpenses, itinerary: eventItinerary, checklist: eventChecklist, reflection })
   const gradient = TYPE_GRADIENTS[event.type] ?? TYPE_GRADIENTS.outro
-  const totalSpent = eventExpenses.reduce((s, e) => s + e.amount, 0)
   const checklistProgress = eventChecklist.length > 0
     ? `${eventChecklist.filter(c => c.done).length}/${eventChecklist.length}`
     : '0/0'
@@ -296,6 +294,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             {/* Ações */}
             <div className="pt-4 border-t space-y-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Ações</h3>
+              <ShareEventDialog event={event} />
               <Button variant="outline" className="w-full justify-start" onClick={handleDuplicate}>
                 <Copy className="w-4 h-4 mr-2" />
                 Duplicar evento

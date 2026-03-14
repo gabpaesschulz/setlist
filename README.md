@@ -64,4 +64,5 @@ src/
 - [x] Upload de imagem de capa
 - [ ] Importação do Sympla/Eventim via URL
 - [ ] Widget de countdown iOS
-- [ ] Compartilhar evento por link/QR code
+- [x] Compartilhar evento por link/QR code
+- [ ] Detectar evento duplicado ao importar por link compartilhado
