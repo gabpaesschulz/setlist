@@ -115,6 +115,38 @@ export function parseSharePayload(raw: string): SharedEventPayload {
   }
 }
 
+export function findDuplicateSharedEvent(
+  events: Event[],
+  sharedEvent: SharedEventPayload['event'],
+): Event | null {
+  const sharedTitle = normalizeText(sharedEvent.title)
+  const sharedArtist = normalizeText(sharedEvent.artist)
+  const sharedCity = normalizeText(sharedEvent.city)
+  const sharedState = normalizeText(sharedEvent.state)
+  const sharedVenue = normalizeText(sharedEvent.venue)
+  const sharedTime = normalizeText(sharedEvent.time ?? '')
+
+  return (
+    events.find((event) => {
+      if (event.date !== sharedEvent.date) return false
+
+      if (normalizeText(event.city) !== sharedCity) return false
+      if (normalizeText(event.state) !== sharedState) return false
+
+      const eventTime = normalizeText(event.time ?? '')
+      if (sharedTime && eventTime && sharedTime !== eventTime) return false
+
+      const sameVenue = normalizeText(event.venue) === sharedVenue
+      const sameTitle = normalizeText(event.title) === sharedTitle
+      const sameArtist = normalizeText(event.artist) === sharedArtist
+
+      if (sameVenue && (sameTitle || sameArtist)) return true
+
+      return sameTitle && sameArtist
+    }) ?? null
+  )
+}
+
 function toRequired(value: unknown, label: string): string {
   const text = toText(value).trim()
   if (!text) {
@@ -130,4 +162,13 @@ function toText(value: unknown): string {
 function toOptionalText(value: unknown): string | undefined {
   const text = toText(value).trim()
   return text ? text : undefined
+}
+
+function normalizeText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
 }

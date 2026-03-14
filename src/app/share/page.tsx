@@ -3,11 +3,11 @@
 import Link from 'next/link'
 import { Suspense, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Calendar, Loader2, MapPin, Upload } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Calendar, Loader2, MapPin, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useEventsStore } from '@/stores/events-store'
 import { generateDefaultChecklist } from '@/lib/domain/checklist'
-import { parseSharePayload } from '@/lib/domain/share'
+import { findDuplicateSharedEvent, parseSharePayload } from '@/lib/domain/share'
 import { formatDateLong } from '@/lib/formatters'
 import { toast } from '@/components/ui/use-toast'
 
@@ -22,6 +22,7 @@ export default function ShareImportPage() {
 function ShareImportContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const events = useEventsStore((s) => s.events)
   const addEvent = useEventsStore((s) => s.addEvent)
   const addChecklistItem = useEventsStore((s) => s.addChecklistItem)
 
@@ -43,8 +44,21 @@ function ShareImportContent() {
     }
   }, [searchParams])
 
+  const duplicateEvent = useMemo(() => {
+    if (!parsed.payload) return null
+    return findDuplicateSharedEvent(events, parsed.payload.event)
+  }, [events, parsed.payload])
+
   const handleImport = async () => {
     if (!parsed.payload) return
+    if (duplicateEvent) {
+      toast({
+        title: 'Evento já existe',
+        description: `${duplicateEvent.title} já está na sua lista.`,
+      })
+      router.push(`/events/${duplicateEvent.id}`)
+      return
+    }
 
     setImporting(true)
     try {
@@ -134,8 +148,36 @@ function ShareImportContent() {
             </div>
           )}
 
-          <Button onClick={handleImport} className="mt-5 w-full" disabled={importing}>
-            {importing ? (
+          {duplicateEvent && (
+            <div className="mt-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3">
+              <div className="flex items-start gap-2 text-amber-900 dark:text-amber-300">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Esse evento já existe na sua lista.</p>
+                  <p className="text-xs text-amber-800/90 dark:text-amber-300/90">
+                    Para evitar duplicidade, a importação foi bloqueada.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/events/${duplicateEvent.id}`)}
+                    className="border-amber-600/40 bg-transparent text-amber-900 hover:bg-amber-500/20 dark:text-amber-300 dark:hover:bg-amber-500/10"
+                  >
+                    Abrir evento existente
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <Button onClick={handleImport} className="mt-5 w-full" disabled={importing || Boolean(duplicateEvent)}>
+            {duplicateEvent ? (
+              <>
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Evento já importado
+              </>
+            ) : importing ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Importando...

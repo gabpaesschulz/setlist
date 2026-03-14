@@ -65,4 +65,5 @@ src/
 - [ ] Importação do Sympla/Eventim via URL
 - [ ] Widget de countdown iOS
 - [x] Compartilhar evento por link/QR code
-- [ ] Detectar evento duplicado ao importar por link compartilhado
+- [x] Detectar evento duplicado ao importar por link compartilhado
+- [ ] Exportar evento para calendário (.ics)
