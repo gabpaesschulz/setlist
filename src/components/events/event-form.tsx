@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -175,6 +175,21 @@ function getErrorMessage(err: unknown): string {
   return 'Ocorreu um erro inesperado. Tente novamente.';
 }
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error('Falha ao processar imagem selecionada.'));
+    };
+    reader.onerror = () => reject(new Error('Não foi possível ler o arquivo da imagem.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function EventForm({ mode, initialData }: EventFormProps) {
@@ -193,6 +208,7 @@ export function EventForm({ mode, initialData }: EventFormProps) {
     register,
     handleSubmit,
     control,
+    setValue,
     watch,
     formState: { errors },
   } = useForm<EventFormSchema>({
@@ -201,8 +217,60 @@ export function EventForm({ mode, initialData }: EventFormProps) {
   });
 
   const watchedValues = watch();
+  const coverImage = watch('coverImage');
   const ticketPurchased = watch('ticket.purchased');
   const lodgingRequired = watch('lodging.required');
+  const coverImageInputRef = useRef<HTMLInputElement>(null);
+
+  const removeCoverImage = () => {
+    setValue('coverImage', '', { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+    if (coverImageInputRef.current) {
+      coverImageInputRef.current.value = '';
+    }
+  };
+
+  const handleCoverImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Arquivo inválido',
+        description: 'Selecione um arquivo de imagem (JPG, PNG, WebP, etc).',
+        variant: 'destructive',
+      });
+      event.target.value = '';
+      return;
+    }
+
+    const maxSizeBytes = 5 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      toast({
+        title: 'Imagem muito grande',
+        description: 'A imagem de capa deve ter no máximo 5 MB.',
+        variant: 'destructive',
+      });
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setValue('coverImage', dataUrl, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
+      toast({
+        title: 'Imagem selecionada',
+        description: 'A nova capa será salva junto com o evento.',
+      });
+    } catch (err) {
+      toast({
+        title: 'Erro ao carregar imagem',
+        description: getErrorMessage(err),
+        variant: 'destructive',
+      });
+    } finally {
+      event.target.value = '';
+    }
+  };
 
   // ── Submit ──────────────────────────────────────────────────────────────
   const onSubmit = async (data: EventFormSchema) => {
@@ -530,6 +598,45 @@ export function EventForm({ mode, initialData }: EventFormProps) {
                     {...register('venue')}
                     placeholder="Ex: Parque Olímpico"
                   />
+                </FormField>
+
+                <FormField
+                  label="Imagem de capa (opcional)"
+                  description="Faça upload de uma imagem para personalizar o evento. Máximo: 5 MB."
+                  error={errors.coverImage?.message}
+                >
+                  <div className="space-y-3">
+                    {coverImage ? (
+                      <div className="overflow-hidden rounded-xl border border-border/60 bg-muted/20">
+                        <img
+                          src={coverImage}
+                          alt={`Capa do evento ${watch('title') || 'sem título'}`}
+                          className="h-40 w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-28 items-center justify-center rounded-xl border border-dashed border-border/70 bg-muted/20 text-xs text-muted-foreground">
+                        Nenhuma imagem selecionada
+                      </div>
+                    )}
+
+                    <Input
+                      ref={coverImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCoverImageChange}
+                    />
+
+                    {coverImage && (
+                      <button
+                        type="button"
+                        onClick={removeCoverImage}
+                        className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        Remover capa
+                      </button>
+                    )}
+                  </div>
                 </FormField>
 
                 <SectionNav

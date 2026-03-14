@@ -97,6 +97,7 @@ export function EventDetailHeader({
   const countdown = getCountdown(event.date, event.time);
   const gradient = typeGradient[event.type];
   const typeMeta = EVENT_TYPES[event.type];
+  const hasCoverImage = !!event.coverImage;
 
   const readiness = calculateReadiness({
     event,
@@ -121,6 +122,17 @@ export function EventDetailHeader({
 
   return (
     <div className={cn('relative overflow-hidden bg-gradient-to-br', gradient)}>
+      {hasCoverImage && (
+        <>
+          <img
+            src={event.coverImage}
+            alt={`Capa do evento ${event.title || event.artist}`}
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-black/35" />
+        </>
+      )}
+
       {/* Decorative orbs */}
       <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/5 blur-2xl" />
       <div className="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-black/10 blur-xl" />

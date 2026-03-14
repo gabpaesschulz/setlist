@@ -67,6 +67,7 @@ export function EventCard({
   const gradient = typeGradient[event.type];
   const accentBg = typeAccentBg[event.type];
   const typeMeta = EVENT_TYPES[event.type];
+  const hasCoverImage = !!event.coverImage;
 
   // Quick status icons
   const hasTicket = ticket?.purchased;
@@ -90,7 +91,15 @@ export function EventCard({
               accentBg,
             )}
           >
-            {typeMeta.icon}
+            {hasCoverImage ? (
+              <img
+                src={event.coverImage}
+                alt={`Capa do evento ${event.title || event.artist}`}
+                className="h-full w-full rounded-xl object-cover"
+              />
+            ) : (
+              typeMeta.icon
+            )}
           </div>
 
           {/* Main info */}
@@ -122,8 +131,19 @@ export function EventCard({
         {/* ── Gradient accent strip ── */}
         <div className={cn('h-1.5 w-full bg-gradient-to-r', gradient)} />
 
+        {hasCoverImage && (
+          <div className="relative h-36 w-full overflow-hidden bg-muted/30">
+            <img
+              src={event.coverImage}
+              alt={`Capa do evento ${event.title || event.artist}`}
+              className="h-full w-full object-cover"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card via-card/45 to-transparent" />
+          </div>
+        )}
+
         {/* ── Card body ── */}
-        <div className="p-4">
+        <div className={cn('p-4', hasCoverImage && 'pt-3')}>
           {/* Top row: badges + countdown */}
           <div className="flex items-start justify-between gap-2 mb-3">
             <div className="flex items-center gap-1.5 flex-wrap">

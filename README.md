@@ -61,6 +61,7 @@ src/
 
 - [ ] Sync via iCloud/Google Drive
 - [ ] Notificações push (D-7, D-1)
-- [ ] Upload de imagem de capa
+- [x] Upload de imagem de capa
 - [ ] Importação do Sympla/Eventim via URL
 - [ ] Widget de countdown iOS
+- [ ] Compartilhar evento por link/QR code
