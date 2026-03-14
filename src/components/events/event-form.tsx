@@ -163,6 +163,18 @@ function sectionHasData(id: SectionId, values: EventFormSchema): boolean {
   }
 }
 
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error && err.message.trim().length > 0) {
+    return err.message;
+  }
+
+  if (typeof err === 'string' && err.trim().length > 0) {
+    return err;
+  }
+
+  return 'Ocorreu um erro inesperado. Tente novamente.';
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function EventForm({ mode, initialData }: EventFormProps) {
@@ -299,10 +311,11 @@ export function EventForm({ mode, initialData }: EventFormProps) {
 
       router.push(`/events/${eventId}`);
     } catch (err) {
-      console.error(err);
+      const description = getErrorMessage(err);
+      console.error('Erro ao salvar evento:', err);
       toast({
-        title: 'Erro ao salvar',
-        description: 'Ocorreu um erro inesperado. Tente novamente.',
+        title: mode === 'create' ? 'Erro ao criar evento' : 'Erro ao atualizar evento',
+        description,
         variant: 'destructive',
       });
     } finally {
