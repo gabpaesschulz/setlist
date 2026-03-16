@@ -11,15 +11,15 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const ensureHydrated = useEventsStore((s) => s.ensureHydrated);
+  const loadAll = useEventsStore((s) => s.loadAll);
   const createAutoBackupSnapshot = useEventsStore((s) => s.createAutoBackupSnapshot);
   const listAutoBackupSnapshots = useEventsStore((s) => s.listAutoBackupSnapshots);
   const pruneAutoBackupSnapshots = useEventsStore((s) => s.pruneAutoBackupSnapshots);
 
   // ── Initialize store on first mount ──────────────────────────────────────────
   useEffect(() => {
-    ensureHydrated();
-  }, [ensureHydrated]);
+    loadAll();
+  }, [loadAll]);
 
   // ── Register service worker ───────────────────────────────────────────────────
   useEffect(() => {

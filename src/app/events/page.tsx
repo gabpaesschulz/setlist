@@ -27,7 +27,7 @@ const CHIPS: { id: FilterChip; label: string }[] = [
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function EventsPage() {
-  const { loading, isHydrated } = useInitEventsStore();
+  useInitEventsStore();
 
   const events = useEventsStore((s) => s.events);
 
@@ -92,14 +92,6 @@ export default function EventsPage() {
   }, [events, search, activeChip, filterCity, filterMonth, today]);
 
   const totalFiltered = upcoming.length + past.length;
-
-  if (!isHydrated && loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Carregando eventos...</p>
-      </div>
-    )
-  }
 
   // ── Empty state ───────────────────────────────────────────────────────────
   if (events.length === 0) {

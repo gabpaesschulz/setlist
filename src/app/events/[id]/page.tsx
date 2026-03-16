@@ -52,8 +52,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const itinerary = useEventsStore((s) => s.itinerary)
   const checklist = useEventsStore((s) => s.checklist)
   const reflections = useEventsStore((s) => s.reflections)
-  const loading = useEventsStore((s) => s.loading)
-  const isHydrated = useEventsStore((s) => s.isHydrated)
   const deleteEvent = useEventsStore((s) => s.deleteEvent)
   const completeEvent = useEventsStore((s) => s.completeEvent)
   const duplicateEvent = useEventsStore((s) => s.duplicateEvent)
@@ -67,14 +65,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const eventItinerary = itinerary.filter((i) => i.eventId === id).sort((a, b) => a.order - b.order)
   const eventChecklist = checklist.filter((c) => c.eventId === id).sort((a, b) => a.order - b.order)
   const reflection = reflections.find((r) => r.eventId === id)
-
-  if (!isHydrated && loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse text-muted-foreground">Carregando...</div>
-      </div>
-    )
-  }
 
   if (!event) {
     return (

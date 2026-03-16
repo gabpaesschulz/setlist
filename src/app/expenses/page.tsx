@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { motion, type Variants } from 'framer-motion'
 import { ChevronRight, TrendingUp, Receipt } from 'lucide-react'
@@ -23,6 +23,7 @@ import {
   CATEGORY_COLORS,
 } from '@/components/expenses/expense-chart'
 import type { ExpenseCategory } from '@/types'
+import { cn } from '@/lib/utils'
 
 // ─── Animation Variants ───────────────────────────────────────────────────────
 
@@ -97,9 +98,13 @@ function EmptyExpenses() {
 // ─── Expenses Page ────────────────────────────────────────────────────────────
 
 export default function ExpensesPage() {
-  const { events, expenses, tickets, travels, lodgings, loading } = useEventsStore()
+  const { events, expenses, tickets, travels, lodgings, loading, loadAll } = useEventsStore()
 
   const currentYear = new Date().getFullYear()
+
+  useEffect(() => {
+    loadAll()
+  }, [loadAll])
 
   // ── Derived data ────────────────────────────────────────────────────────────
   const allExpenses = useMemo(
