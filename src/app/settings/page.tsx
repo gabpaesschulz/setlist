@@ -597,7 +597,7 @@ export default function SettingsPage() {
 
       {/* Reset confirm */}
       {resetOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4">
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-end justify-center p-4 pb-24">
           <div className="bg-card rounded-2xl p-6 w-full max-w-sm">
             <h3 className="font-bold text-lg text-destructive mb-2">Resetar todos os dados</h3>
             <p className="text-sm text-muted-foreground mb-4">

@@ -17,6 +17,7 @@ import { getCountdown } from '@/lib/domain/countdown'
 import { calculateReadiness } from '@/lib/domain/readiness'
 import { formatDateLong } from '@/lib/formatters'
 import { EVENT_TYPES } from '@/lib/constants'
+import { useEventCoverImage } from '@/hooks/use-event-cover-image'
 import { cn } from '@/lib/utils'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -172,6 +173,7 @@ export function NextEventHero({
   const checklistDone = checklist.filter((c) => c.done).length
   const checklistTotal = checklist.length
   const eventTypeInfo = EVENT_TYPES[event.type]
+  const coverImage = useEventCoverImage(event)
 
   // Lodging is only applicable if explicitly required
   const lodgingApplicable = lodging?.required === true
@@ -184,8 +186,11 @@ export function NextEventHero({
         transition={{ duration: 0.45, ease: 'easeOut' }}
         className="relative overflow-hidden rounded-2xl"
         style={{
-          background:
-            'linear-gradient(135deg, #6d28d9 0%, #7c3aed 35%, #8b5cf6 65%, #a78bfa 100%)',
+          backgroundImage: coverImage
+            ? `linear-gradient(135deg, rgba(29, 12, 60, 0.78) 0%, rgba(56, 25, 105, 0.75) 38%, rgba(86, 47, 145, 0.72) 68%, rgba(124, 58, 237, 0.6) 100%), url(${coverImage})`
+            : 'linear-gradient(135deg, #6d28d9 0%, #7c3aed 35%, #8b5cf6 65%, #a78bfa 100%)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}
       >
         {/* Decorative background pattern */}

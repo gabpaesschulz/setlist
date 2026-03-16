@@ -23,6 +23,7 @@ import { NextEventHero } from '@/components/dashboard/next-event-hero'
 import { QuickStats } from '@/components/dashboard/quick-stats'
 import { MonthStrip } from '@/components/dashboard/month-strip'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useEventCoverImage } from '@/hooks/use-event-cover-image'
 import { cn } from '@/lib/utils'
 import type { Event } from '@/types'
 
@@ -42,6 +43,7 @@ const fadeUp: Variants = {
 function CompactEventCard({ event, index }: { event: Event; index: number }) {
   const countdown = getCountdown(event.date, event.time)
   const typeInfo = EVENT_TYPES[event.type]
+  const coverImage = useEventCoverImage(event)
 
   const countdownText = countdown.isToday
     ? 'Hoje!'
@@ -71,9 +73,17 @@ function CompactEventCard({ event, index }: { event: Event; index: number }) {
         className="flex items-center gap-3 rounded-xl bg-card px-4 py-3.5 shadow-sm ring-1 ring-border/60 transition-all duration-200 active:scale-[0.98] active:bg-muted/50"
       >
         {/* Type icon */}
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg">
-          {typeInfo.icon}
-        </div>
+        {coverImage ? (
+          <img
+            src={coverImage}
+            alt={`Capa do evento ${event.title || event.artist}`}
+            className="h-10 w-10 flex-shrink-0 rounded-xl object-cover"
+          />
+        ) : (
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-lg">
+            {typeInfo.icon}
+          </div>
+        )}
 
         {/* Event info */}
         <div className="min-w-0 flex-1">
