@@ -101,7 +101,8 @@ src/
 
 - A hidratação inicial do estado foi centralizada no `AppShell` usando `ensureHydrated`
 - Páginas de domínio não disparam mais `loadAll` no mount, evitando leituras redundantes no IndexedDB
-- Fluxos de importação, restauração e seed usam refresh explícito no store para manter consistência pós-mutação
+- `ensureHydrated` é idempotente e deduplica concorrência durante bootstrap
+- Fluxos de importação, restauração e seed usam `refreshAll` explícito no store para manter consistência pós-mutação
 
 ## Roadmap
 
