@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { motion, type Variants } from 'framer-motion'
 import {
@@ -16,7 +16,6 @@ import {
 } from 'lucide-react'
 import { useEventsStore } from '@/stores/events-store'
 import { generateYearInsightsForYear } from '@/lib/domain/insights'
-import { getExpensesByMonth } from '@/lib/domain/expenses'
 import { getUpcomingEvents, sortEventsByDate } from '@/lib/domain/events'
 import { formatCurrency, formatDateLong, getMonthName } from '@/lib/formatters'
 import { EXPENSE_CATEGORIES, EVENT_TYPES } from '@/lib/constants'
@@ -95,13 +94,9 @@ function StatCell({ icon, label, value, sub, color = 'text-primary' }: StatCellP
 // ─── Insights Page ────────────────────────────────────────────────────────────
 
 export default function InsightsPage() {
-  const { events, expenses, loading, loadAll } = useEventsStore()
+  const { events, expenses, loading } = useEventsStore()
 
   const currentYear = new Date().getFullYear()
-
-  useEffect(() => {
-    loadAll()
-  }, [loadAll])
 
   // ── Derived data ────────────────────────────────────────────────────────────
   const insights = useMemo(

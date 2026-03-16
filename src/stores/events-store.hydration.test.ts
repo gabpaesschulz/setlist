@@ -126,4 +126,24 @@ describe('useEventsStore hydration', () => {
 
     expect(mocks.eventsToArray).toHaveBeenCalledTimes(2)
   })
+
+  it('mantém isHydrated false quando ocorre erro de leitura', async () => {
+    mocks.eventsToArray.mockRejectedValueOnce(new Error('db offline'))
+
+    await useEventsStore.getState().ensureHydrated()
+
+    expect(useEventsStore.getState().isHydrated).toBe(false)
+    expect(useEventsStore.getState().error).toBe('db offline')
+  })
+
+  it('permite nova tentativa após falha anterior', async () => {
+    mocks.eventsToArray.mockRejectedValueOnce(new Error('falha transitória'))
+
+    await useEventsStore.getState().ensureHydrated()
+    await useEventsStore.getState().ensureHydrated()
+
+    expect(mocks.eventsToArray).toHaveBeenCalledTimes(2)
+    expect(useEventsStore.getState().isHydrated).toBe(true)
+    expect(useEventsStore.getState().error).toBeNull()
+  })
 })

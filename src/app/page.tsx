@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
@@ -233,7 +232,6 @@ export default function HomePage() {
     events,
     expenses,
     loading,
-    loadAll,
     seedDemo,
     getTicketByEventId,
     getTravelByEventId,
@@ -244,11 +242,6 @@ export default function HomePage() {
 
   const router = useRouter()
   const currentYear = new Date().getFullYear()
-
-  // Load all data on mount
-  useEffect(() => {
-    loadAll()
-  }, [loadAll])
 
   // Derived data
   const nextEvent = getNextEvent(events)

@@ -106,14 +106,14 @@ describe("useEventsStore itinerary actions", () => {
   });
 
   it("restaura eventos selecionados e recarrega dados", async () => {
-    const loadAllSpy = vi.spyOn(useEventsStore.getState(), "loadAll").mockResolvedValue(undefined);
+    const refreshAllSpy = vi.spyOn(useEventsStore.getState(), "refreshAll").mockResolvedValue(undefined);
     mocks.importDataByEventIds.mockResolvedValue(undefined);
 
     await useEventsStore.getState().importDataByEvents('{"version":1}', ["event-1", "event-2"]);
 
     expect(mocks.importDataByEventIds).toHaveBeenCalledWith('{"version":1}', ["event-1", "event-2"]);
-    expect(loadAllSpy).toHaveBeenCalled();
-    loadAllSpy.mockRestore();
+    expect(refreshAllSpy).toHaveBeenCalled();
+    refreshAllSpy.mockRestore();
   });
 
   it("persiste cenário de compra antecipada e sincroniza estado", async () => {

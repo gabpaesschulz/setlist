@@ -33,6 +33,7 @@
 ## Melhorias prioritárias (alto impacto para o usuário)
 
 ### 1) Centralizar hidratação do store em fluxo único idempotente
+- **Status atual:** entregue na branch `feature/ROAD-1-hidratacao-unica-store`.
 - **Descrição detalhada:** mover a hidratação inicial para um único ponto canônico da aplicação e transformar o refresh em gatilhos explícitos por ação (import, restore, reset), removendo chamadas redundantes.
 - **Justificativa do impacto no usuário:** reduz tempo de abertura percebido e inconsistências ocasionais de dados entre telas, melhorando fluidez e confiança.
 - **Estimativa de esforço:** 5 SP (médio).
@@ -97,3 +98,44 @@
 6. Definir allowlist de imagens remotas.
 7. Particionar carregamento por contexto de tela.
 8. Introduzir criptografia opcional para backup/export.
+
+## Novas sugestões pós-análise (matriz impacto x esforço)
+
+| Código | Sugestão | Impacto | Esforço | Prioridade |
+|---|---|---|---|---|
+| ROAD-9 | Observabilidade de hidratação com SLO p95 | Alto | Baixo | P1 |
+| ROAD-10 | Fatiar `events-store` em slices por domínio | Alto | Médio | P1 |
+| ROAD-11 | Harden de API de imagem + circuit breaker | Médio-Alto | Médio | P2 |
+| ROAD-12 | Criptografia opcional de backup com UX guiada | Alto | Alto | P2 |
+
+### ROAD-9 — Observabilidade de hidratação com SLO p95
+- **Descrição detalhada do problema/melhoria:** falta telemetria operacional para medir latência real de hidratação em produção local-first; sem métrica não há baseline contínuo de regressão.
+- **Critérios de aceitação mensuráveis:** coletar tempo de hidratação por sessão; expor p50/p95 em painel local; registrar contagem de hidratações por abertura; gerar alerta quando p95 ultrapassar baseline +20%.
+- **Complexidade estimada:** 3 SP.
+- **Análise de riscos técnicos:** risco baixo de overhead em runtime; mitigar com amostragem e persistência leve.
+- **Valor de negócio quantificado:** redução estimada de 20–30% no tempo para diagnosticar regressões de performance e queda de 15% em reclamações de lentidão de abertura.
+- **Dependências:** `AppShell`, `events-store`, camada de logging local.
+
+### ROAD-10 — Fatiar `events-store` em slices por domínio
+- **Descrição detalhada do problema/melhoria:** store monolítico aumenta acoplamento, amplia superfície de regressão e dificulta otimização de re-render por tela.
+- **Critérios de aceitação mensuráveis:** separar pelo menos 4 slices (eventos, gastos, backup, auditoria); reduzir em >=25% renderizações em fluxos de edição; manter 100% de compatibilidade dos contratos públicos.
+- **Complexidade estimada:** 8 SP.
+- **Análise de riscos técnicos:** risco médio de regressão por alteração estrutural; mitigar com migração incremental e testes de integração por domínio.
+- **Valor de negócio quantificado:** redução esperada de 15–25% no tempo de interação em telas críticas e redução de 20% no custo de manutenção em mudanças de negócio.
+- **Dependências:** refactor progressivo de componentes consumidores e suíte de integração estável.
+
+### ROAD-11 — Harden de API de imagem + circuit breaker
+- **Descrição detalhada do problema/melhoria:** endpoint de imagem depende de fontes externas e pode degradar UX em sequência de falhas sem proteção observável por host.
+- **Critérios de aceitação mensuráveis:** implementar limite de tentativas por host, timeout adaptativo e fallback consistente; reduzir falhas repetidas em >=40%; manter tempo de resposta p95 da rota dentro de limite definido.
+- **Complexidade estimada:** 5 SP.
+- **Análise de riscos técnicos:** risco médio de bloquear host legítimo por regra agressiva; mitigar com allowlist e janela de desbloqueio.
+- **Valor de negócio quantificado:** melhora prevista de 10–15% na taxa de cards com imagem válida e redução de 20% em fricção de navegação em listas.
+- **Dependências:** rota `artist-image`, política de cache e módulo de fallback de capa.
+
+### ROAD-12 — Criptografia opcional de backup com UX guiada
+- **Descrição detalhada do problema/melhoria:** backups locais em JSON puro elevam risco de exposição de dados em compartilhamento acidental.
+- **Critérios de aceitação mensuráveis:** export protegido por senha com AES-GCM; validação de integridade no import; compatibilidade com backups legados; taxa de sucesso de restauração >=99% em testes de regressão.
+- **Complexidade estimada:** 13 SP.
+- **Análise de riscos técnicos:** risco alto de incompatibilidade de formato e suporte; mitigar com versionamento de payload e fluxo de recuperação.
+- **Valor de negócio quantificado:** redução estimada de 60–80% no risco de exposição de dados em arquivos compartilhados e aumento de confiança em recursos de backup.
+- **Dependências:** versionamento de backup, fluxo de settings e testes de compatibilidade retroativa.

@@ -4,10 +4,10 @@ import { useEffect } from 'react';
 import { useEventsStore } from '@/stores/events-store';
 
 /**
- * Initializes the events store by loading all persisted events from IndexedDB
- * on component mount. Safe to call multiple times — Zustand deduplicates.
+ * Initializes the events store by hydrating persisted events from IndexedDB
+ * on component mount. Safe to call multiple times — hydration is idempotent.
  *
- * @returns `loading` — true while the initial fetch is in progress.
+ * @returns `loading` e `isHydrated` para controle de estado de bootstrap.
  *
  * @example
  *   function EventsPage() {
@@ -17,12 +17,13 @@ import { useEventsStore } from '@/stores/events-store';
  *   }
  */
 export function useInitEventsStore() {
-  const loadAll = useEventsStore((s) => s.loadAll);
+  const ensureHydrated = useEventsStore((s) => s.ensureHydrated);
   const loading = useEventsStore((s) => s.loading);
+  const isHydrated = useEventsStore((s) => s.isHydrated);
 
   useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+    ensureHydrated();
+  }, [ensureHydrated]);
 
-  return { loading };
+  return { loading, isHydrated };
 }
