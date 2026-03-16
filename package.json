@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:quick": "vitest run src/lib/domain/expenses.test.ts src/components/events/expenses-section.integration.test.tsx src/components/events/early-purchase-simulator.integration.test.tsx src/stores/events-store.itinerary.test.ts",
+    "test:quick": "vitest run src/lib/domain/expenses.test.ts src/components/events/expenses-section.integration.test.tsx src/components/events/early-purchase-simulator.integration.test.tsx src/stores/events-store.itinerary.test.ts src/stores/events-store.hydration.test.ts src/components/app-shell/app-shell.integration.test.tsx",
     "prepare": "husky"
   },
   "dependencies": {

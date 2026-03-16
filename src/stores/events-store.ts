@@ -62,10 +62,13 @@ interface EventsState {
   purchaseSimulations: PurchaseSimulation[]
   auditLogs: EventAuditLog[]
   loading: boolean
+  isHydrated: boolean
   error: string | null
 
   // ─── Actions ──────────────────────────────────────────────────────────
   loadAll: () => Promise<void>
+  ensureHydrated: () => Promise<void>
+  refreshAll: () => Promise<void>
   addEvent: (data: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Event>
   updateEvent: (id: string, data: Partial<Event>) => Promise<Event>
   deleteEvent: (id: string) => Promise<void>
@@ -119,6 +122,8 @@ interface EventsState {
   getEventWithRelations: (id: string) => EventWithRelations | null
 }
 
+let loadAllInFlight: Promise<void> | null = null
+
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useEventsStore = create<EventsState>((set, get) => ({
@@ -133,30 +138,64 @@ export const useEventsStore = create<EventsState>((set, get) => ({
   purchaseSimulations: [],
   auditLogs: [],
   loading: false,
+  isHydrated: false,
   error: null,
 
   // ─── Load All ───────────────────────────────────────────────────────────────
 
   loadAll: async () => {
-    set({ loading: true, error: null })
-    try {
-      const [events, tickets, travels, lodgings, expenses, itinerary, checklist, reflections, purchaseSimulations, auditLogs] =
-        await Promise.all([
-          db.events.orderBy('date').toArray(),
-          db.tickets.toArray(),
-          db.travels.toArray(),
-          db.lodgings.toArray(),
-          db.expenses.toArray(),
-          db.itinerary.toArray(),
-          db.checklist.toArray(),
-          db.reflections.toArray(),
-          db.purchaseSimulations.toArray(),
-          db.auditLogs.toArray(),
-        ])
-      set({ events, tickets, travels, lodgings, expenses, itinerary, checklist, reflections, purchaseSimulations, auditLogs, loading: false })
-    } catch (err) {
-      set({ error: (err as Error).message, loading: false })
+    if (loadAllInFlight) {
+      await loadAllInFlight
+      return
     }
+    loadAllInFlight = (async () => {
+      set({ loading: true, error: null })
+      try {
+        const [events, tickets, travels, lodgings, expenses, itinerary, checklist, reflections, purchaseSimulations, auditLogs] =
+          await Promise.all([
+            db.events.orderBy('date').toArray(),
+            db.tickets.toArray(),
+            db.travels.toArray(),
+            db.lodgings.toArray(),
+            db.expenses.toArray(),
+            db.itinerary.toArray(),
+            db.checklist.toArray(),
+            db.reflections.toArray(),
+            db.purchaseSimulations.toArray(),
+            db.auditLogs.toArray(),
+          ])
+        set({
+          events,
+          tickets,
+          travels,
+          lodgings,
+          expenses,
+          itinerary,
+          checklist,
+          reflections,
+          purchaseSimulations,
+          auditLogs,
+          loading: false,
+          isHydrated: true,
+        })
+      } catch (err) {
+        set({ error: (err as Error).message, loading: false })
+      }
+    })()
+    try {
+      await loadAllInFlight
+    } finally {
+      loadAllInFlight = null
+    }
+  },
+
+  ensureHydrated: async () => {
+    if (get().isHydrated) return
+    await get().loadAll()
+  },
+
+  refreshAll: async () => {
+    await get().loadAll()
   },
 
   // ─── Events ─────────────────────────────────────────────────────────────────
@@ -611,7 +650,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       await seedDemoData()
-      await get().loadAll()
+      await get().refreshAll()
     } catch (err) {
       set({ error: (err as Error).message, loading: false })
     }
@@ -629,7 +668,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       await importAllData(json)
-      await get().loadAll()
+      await get().refreshAll()
       const eventIds = get().events.map((event) => event.id)
       const logs = await Promise.all(
         eventIds.map((eventId) =>
@@ -654,7 +693,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       await importDataByEventIds(json, eventIds)
-      await get().loadAll()
+      await get().refreshAll()
       const logs = await Promise.all(
         eventIds.map((eventId) =>
           dbCreateEventAuditLog(
@@ -690,6 +729,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
         purchaseSimulations: [],
         auditLogs: [],
         loading: false,
+        isHydrated: true,
         error: null,
       })
     } catch (err) {
@@ -710,7 +750,7 @@ export const useEventsStore = create<EventsState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       await dbRestoreAutoBackupSnapshot(id)
-      await get().loadAll()
+      await get().refreshAll()
       const eventIds = get().events.map((event) => event.id)
       const logs = await Promise.all(
         eventIds.map((eventId) =>

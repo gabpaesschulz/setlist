@@ -40,6 +40,8 @@ npm run test:coverage
 npm run test:quick
 ```
 
+Suíte rápida inclui cenários críticos de hidratação centralizada do store, fluxo de dashboard e simulador de compra antecipada.
+
 ## Qualidade de código (pre-commit)
 
 ```bash
@@ -48,6 +50,13 @@ npm run prepare
 
 - O hook pre-commit executa lint com autofix via lint-staged
 - Em seguida roda uma suíte rápida de testes críticos
+
+## Fluxo de branch e PR
+
+- Branch principal estável: `main`
+- Features no padrão: `feature/ROAD-<id>-descricao-curta`
+- Antes de iniciar: atualizar a `main` local e criar branch de feature a partir dela
+- Base de PR: `main` com descrição estruturada no padrão de [PR_DRAFT.md](./PR_DRAFT.md)
 
 ## Simulador de compra antecipada
 
@@ -87,6 +96,12 @@ src/
 ├── schemas/        # Zod schemas
 └── types/          # TypeScript types
 ```
+
+## Arquitetura de hidratação
+
+- A hidratação inicial do estado foi centralizada no `AppShell` usando `ensureHydrated`
+- Páginas de domínio não disparam mais `loadAll` no mount, evitando leituras redundantes no IndexedDB
+- Fluxos de importação, restauração e seed usam refresh explícito no store para manter consistência pós-mutação
 
 ## Roadmap
 

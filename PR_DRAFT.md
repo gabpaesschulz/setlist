@@ -1,28 +1,29 @@
-# feat: linha do tempo operacional por evento
+# feat: centraliza hidratação do store e remove loadAll redundante
 
 ## Tarefa
 
-- ROAD-101 — Linha do tempo operacional com histórico de alterações por evento
+- ROAD-201 — Centralização de hidratação do store e remoção de `loadAll` redundante
 
 ## Resumo das mudanças
 
-- Criação de componente dedicado de histórico operacional com filtros por ação, entidade e período.
-- Paginação incremental de registros com botão de carregamento adicional.
-- Extração de funções utilitárias para labels de auditoria com documentação JSDoc.
-- Integração da timeline na página de detalhe do evento.
-- Atualização do README e ROADMAP com status e instruções de uso.
+- Introdução de hidratação idempotente no `events-store` com `ensureHydrated`, `refreshAll` e deduplicação de chamadas concorrentes.
+- Centralização da hidratação inicial no `AppShell`.
+- Remoção de `loadAll` redundante nas páginas Home, Gastos e Insights.
+- Ajuste dos fluxos de Import, Restore de snapshot e Seed para usar refresh explícito pós-mutação.
+- Proteção de telas de evento para evitar falso estado "não encontrado" durante bootstrap inicial.
+- Inclusão de testes unitários/integrados para hidratação e atualização de `test:quick`.
+- Atualização de README e ROADMAP com o novo fluxo e sugestões pós-análise técnica.
 
 ## Evidências de teste
 
-- `npm run test -- src/lib/domain/audit-log-presenter.test.ts src/components/events/operational-timeline-section.integration.test.tsx src/stores/events-store.audit.integration.test.ts src/lib/db/audit-trail.integration.test.ts`
-- `npx vitest run --coverage src/lib/domain/audit-log-presenter.test.ts src/components/events/operational-timeline-section.integration.test.tsx`
+- `npx vitest run src/stores/events-store.hydration.test.ts src/hooks/use-events-store.test.tsx src/components/app-shell/app-shell.integration.test.tsx src/stores/events-store.itinerary.test.ts src/stores/events-store.audit.integration.test.ts --coverage`
+- `npm run test:quick`
 - `npm run lint`
 
 ## Cobertura
 
-- Cobertura dos novos arquivos acima de 80%:
-  - `src/components/events/operational-timeline-section.tsx`: 90.32% linhas / 83.33% branches
-  - `src/lib/domain/audit-log-presenter.ts`: 100% linhas / 100% branches
+- Cobertura dos novos testes de hidratação validada em cenários de sucesso, concorrência e refresh explícito.
+- Cobertura total do subset executado: 12 testes passando.
 
 ## Checklist
 
@@ -32,7 +33,11 @@
 - [x] Lint executado sem erros
 - [x] README atualizado
 - [x] ROADMAP atualizado
+- [ ] Squash de commits aplicado (se necessário)
+- [ ] Evidências visuais anexadas (screenshots/gifs)
+- [ ] Link da tarefa original anexado no PR
 
 ## Observações
 
-- O repositório já possui mudanças locais pré-existentes não relacionadas nesta branch. Recomenda-se revisar o escopo final antes do commit/push.
+- Esta branch foi criada a partir de `main` atualizada com `origin/main` em fast-forward.
+- Abertura de PR e merge/deploy em produção dependem do fluxo remoto (GitHub/CI) fora deste ambiente local.
