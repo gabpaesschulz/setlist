@@ -3,8 +3,7 @@ import { Notifications, getReminderTargets } from './notifications'
 import type { Event } from '@/types'
 
 declare global {
-  // eslint-disable-next-line no-var
-  var Notification: any
+  var Notification: unknown
 }
 
 function mockNotificationEnv() {
@@ -60,4 +59,3 @@ describe('notifications', () => {
     expect(count2).toBe(0) // deduped
   })
 })
-

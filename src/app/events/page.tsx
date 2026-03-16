@@ -3,15 +3,14 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, CalendarDays, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
+import Link from 'next/link';
 import { useEventsStore } from '@/stores/events-store';
 import { useInitEventsStore } from '@/hooks/use-events-store';
 import { PageHeader } from '@/components/shared/page-header';
 import { EmptyState } from '@/components/shared/empty-state';
 import { AddEventFab } from '@/components/shared/add-event-fab';
 import { EventList } from '@/components/events/event-list';
-import type { EventType } from '@/types';
 import { cn } from '@/lib/utils';
-import { BRAZILIAN_STATES } from '@/lib/constants';
 
 // ─── Filter chip definition ───────────────────────────────────────────────────
 
@@ -107,12 +106,12 @@ export default function EventsPage() {
           title="Sem eventos ainda"
           description="Adicione seu primeiro show, festival ou evento para começar a organizar tudo em um lugar."
           action={
-            <a
+            <Link
               href="/events/new"
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/30 active:scale-95 transition-transform"
             >
               + Adicionar Evento
-            </a>
+            </Link>
           }
         />
         <AddEventFab />

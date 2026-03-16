@@ -96,15 +96,16 @@ src/
   - **Complexidade estimada:** média.
   - **Valor de negócio:** aumenta confiança no recurso de backup, reduz risco de perda acidental e melhora retenção em uso contínuo local-first.
 
-- [ ] Backup automático versionado com retenção local
-  - **Descrição detalhada:** complementar o centro de confiabilidade com snapshots automáticos (ex.: diário/semanal), política de retenção e restauração por ponto no tempo.
+- [x] Backup automático versionado com retenção local
+  - **Descrição detalhada:** snapshots locais automáticos (diário/semanal) com retenção configurável, listagem de pontos de restauração e restauração por ponto no tempo com confirmação.
   - **Critérios de aceitação:**
-    - app gera snapshots automáticos sem bloquear a experiência do usuário;
-    - usuário pode escolher um snapshot por data e restaurar com confirmação;
-    - retenção remove backups antigos conforme política configurada;
-    - snapshots mantêm compatibilidade com versão atual e migrações suportadas.
+    - app cria snapshots automaticamente no uso normal sem bloquear a UI;
+    - usuário pode ativar/desativar, escolher frequência e retenção;
+    - usuário pode gerar snapshot manual e restaurar com confirmação;
+    - retenção remove snapshots antigos conforme política configurada;
+    - snapshots reutilizam o mesmo schema/versionamento do backup existente.
   - **Complexidade estimada:** média/alta.
-  - **Valor de negócio:** eleva proteção contra perda de dados por erro humano e cria percepção de produto mais confiável para planejamento anual.
+  - **Valor de negócio:** eleva proteção contra perda de dados por erro humano e reforça confiabilidade local-first.
 
 - [ ] Sincronização P2P local-first (WebRTC + CRDT)
   - **Descrição detalhada:** permitir sincronização opcional entre dois dispositivos do usuário usando pareamento por QR Code (WebRTC data channel) e resolução de conflitos via CRDT (ex.: Yjs). 100% E2E, sem servidor central, com troca apenas durante sessão ativa.
@@ -126,3 +127,13 @@ src/
     - insights mostram causas principais do desvio e recomendam ajuste por categoria.
   - **Complexidade estimada:** média.
   - **Valor de negócio:** aumenta previsibilidade financeira, incentiva uso recorrente da área de gastos e reforça o valor prático do app no planejamento completo do show/viagem.
+
+- [ ] Linha do tempo operacional com histórico de alterações por evento
+  - **Descrição detalhada:** adicionar uma timeline de mudanças (criação, edição, conclusão e restauração) para cada evento, com diff resumido por campo, permitindo rastrear decisões e recuperar contexto rapidamente.
+  - **Critérios de aceitação:**
+    - cada alteração relevante em evento, ticket, viagem, hospedagem, checklist, roteiro e gastos gera um registro temporal;
+    - usuário consegue filtrar histórico por tipo de alteração e período;
+    - cada item exibe antes/depois resumido e origem da ação (manual, importação, restauração);
+    - histórico pode ser exportado junto ao backup sem quebrar compatibilidade com versões anteriores.
+  - **Complexidade estimada:** alta.
+  - **Valor de negócio:** melhora governança pessoal do planejamento, reduz retrabalho após mudanças frequentes e aumenta confiança em fluxos de restauração e sincronização futura.

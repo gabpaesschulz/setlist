@@ -9,9 +9,9 @@ import type {
   ChecklistItem,
   EventReflection,
   EventWithRelations,
+  AutoBackupSnapshot,
 } from '@/types'
 import {
-  getAllEvents,
   createEvent,
   updateEvent as dbUpdateEvent,
   deleteEvent as dbDeleteEvent,
@@ -34,6 +34,10 @@ import {
   importAllData,
   importDataByEventIds,
   resetAllData,
+  createAutoBackupSnapshot as dbCreateAutoBackupSnapshot,
+  listAutoBackupSnapshots as dbListAutoBackupSnapshots,
+  restoreAutoBackupSnapshot as dbRestoreAutoBackupSnapshot,
+  pruneAutoBackupSnapshots as dbPruneAutoBackupSnapshots,
   type BackupImportPreviewItem,
   db,
 } from '@/lib/db'
@@ -84,6 +88,10 @@ interface EventsState {
   importData: (json: string) => Promise<void>
   importDataByEvents: (json: string, eventIds: string[]) => Promise<void>
   resetData: () => Promise<void>
+  createAutoBackupSnapshot: () => Promise<AutoBackupSnapshot>
+  listAutoBackupSnapshots: () => Promise<AutoBackupSnapshot[]>
+  restoreAutoBackupSnapshot: (id: string) => Promise<void>
+  pruneAutoBackupSnapshots: (retention: number) => Promise<void>
 
   // ─── Computed Selectors ───────────────────────────────────────────────
   getEventById: (id: string) => Event | undefined
@@ -402,6 +410,29 @@ export const useEventsStore = create<EventsState>((set, get) => ({
     } catch (err) {
       set({ error: (err as Error).message, loading: false })
     }
+  },
+
+  createAutoBackupSnapshot: async () => {
+    const payload = await exportAllData()
+    return dbCreateAutoBackupSnapshot(payload)
+  },
+
+  listAutoBackupSnapshots: async () => {
+    return dbListAutoBackupSnapshots()
+  },
+
+  restoreAutoBackupSnapshot: async (id) => {
+    set({ loading: true, error: null })
+    try {
+      await dbRestoreAutoBackupSnapshot(id)
+      await get().loadAll()
+    } catch (err) {
+      set({ error: (err as Error).message, loading: false })
+    }
+  },
+
+  pruneAutoBackupSnapshots: async (retention) => {
+    await dbPruneAutoBackupSnapshots(retention)
   },
 
   // ─── Computed Selectors ─────────────────────────────────────────────────────

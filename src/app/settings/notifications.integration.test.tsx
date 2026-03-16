@@ -13,6 +13,10 @@ const mocks = vi.hoisted(() => ({
   importDataByEvents: vi.fn(),
   resetData: vi.fn(),
   seedDemo: vi.fn(),
+  createAutoBackupSnapshot: vi.fn(),
+  listAutoBackupSnapshots: vi.fn(async () => []),
+  restoreAutoBackupSnapshot: vi.fn(),
+  pruneAutoBackupSnapshots: vi.fn(),
 }))
 
 vi.mock('next-themes', () => ({
@@ -33,6 +37,10 @@ vi.mock('@/stores/events-store', () => ({
       importDataByEvents: mocks.importDataByEvents,
       resetData: mocks.resetData,
       seedDemo: mocks.seedDemo,
+      createAutoBackupSnapshot: mocks.createAutoBackupSnapshot,
+      listAutoBackupSnapshots: mocks.listAutoBackupSnapshots,
+      restoreAutoBackupSnapshot: mocks.restoreAutoBackupSnapshot,
+      pruneAutoBackupSnapshots: mocks.pruneAutoBackupSnapshots,
     }),
 }))
 
@@ -53,7 +61,8 @@ vi.mock('@/components/ui/use-toast', () => ({
 describe('Settings notifications section', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // @ts-expect-error
+    localStorage.clear()
+    // @ts-expect-error Notification é mockada no ambiente de teste jsdom
     global.Notification = { permission: 'default', requestPermission: vi.fn(async () => 'granted') }
   })
 
@@ -134,6 +143,38 @@ describe('Settings notifications section', () => {
 
     await waitFor(() => {
       expect(mocks.importData).toHaveBeenCalledWith(backupJson)
+    })
+  })
+
+  it('gera snapshot manual de backup automático', async () => {
+    mocks.listAutoBackupSnapshots.mockResolvedValue([])
+    mocks.createAutoBackupSnapshot.mockResolvedValue(undefined)
+
+    render(<SettingsPage />)
+    fireEvent.click(screen.getByRole('button', { name: /gerar snapshot agora/i }))
+
+    await waitFor(() => {
+      expect(mocks.createAutoBackupSnapshot).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  it('restaura snapshot selecionado com confirmação', async () => {
+    mocks.listAutoBackupSnapshots.mockResolvedValue([
+      {
+        id: 'snapshot-1',
+        createdAt: '2026-03-10T10:00:00.000Z',
+        payload: '{"version":1}',
+      },
+    ])
+    mocks.restoreAutoBackupSnapshot.mockResolvedValue(undefined)
+
+    render(<SettingsPage />)
+    fireEvent.click(await screen.findByRole('button', { name: /^restaurar$/i }))
+    await screen.findByRole('heading', { name: /restaurar snapshot/i })
+    fireEvent.click(await screen.findByRole('button', { name: /restaurar snapshot/i }))
+
+    await waitFor(() => {
+      expect(mocks.restoreAutoBackupSnapshot).toHaveBeenCalledWith('snapshot-1')
     })
   })
 })

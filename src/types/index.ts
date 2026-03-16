@@ -131,6 +131,12 @@ export interface EventReflection {
   createdAt: string
 }
 
+export interface AutoBackupSnapshot {
+  id: string
+  createdAt: string
+  payload: string
+}
+
 // ─── Composite / Derived Types ────────────────────────────────────────────────
 
 export interface EventWithRelations {

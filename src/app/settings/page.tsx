@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTheme } from 'next-themes'
 import {
   Sun, Moon, Monitor, Download, Upload, RotateCcw, Sparkles,
@@ -22,6 +22,13 @@ import { APP_VERSION } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
 import { Notifications } from '@/lib/notifications'
+import type { AutoBackupSnapshot } from '@/types'
+import {
+  formatBackupDateLabel,
+  getAutoBackupConfig,
+  setAutoBackupConfig,
+  type AutoBackupConfig,
+} from '@/lib/domain/auto-backup'
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
@@ -44,9 +51,16 @@ export default function SettingsPage() {
   const importDataByEvents = useEventsStore((s) => s.importDataByEvents)
   const resetData = useEventsStore((s) => s.resetData)
   const seedDemo = useEventsStore((s) => s.seedDemo)
+  const createAutoBackupSnapshot = useEventsStore((s) => s.createAutoBackupSnapshot)
+  const listAutoBackupSnapshots = useEventsStore((s) => s.listAutoBackupSnapshots)
+  const restoreAutoBackupSnapshot = useEventsStore((s) => s.restoreAutoBackupSnapshot)
+  const pruneAutoBackupSnapshots = useEventsStore((s) => s.pruneAutoBackupSnapshots)
   const [notifEnabled, setNotifEnabled] = useState(false)
   const [notifSupported, setNotifSupported] = useState(false)
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>('unsupported')
+  const [autoBackupConfig, setAutoBackupConfigState] = useState<AutoBackupConfig>(getAutoBackupConfig())
+  const [autoBackupSnapshots, setAutoBackupSnapshots] = useState<AutoBackupSnapshot[]>([])
+  const [restoreSnapshotId, setRestoreSnapshotId] = useState<string | null>(null)
 
   const handleExport = async () => {
     try {
@@ -135,7 +149,7 @@ export default function SettingsPage() {
     toast({ title: 'Dados demo carregados!', description: '8 eventos de exemplo foram adicionados.' })
   }
 
-  const refreshNotifState = () => {
+  const refreshNotifState = useCallback(() => {
     const supported = typeof window !== 'undefined' && 'Notification' in window
     setNotifSupported(supported)
     if (!supported) {
@@ -145,15 +159,14 @@ export default function SettingsPage() {
     }
     setNotifPermission(Notification.permission)
     setNotifEnabled(Notifications.isEnabled())
-  }
+  }, [])
 
   useEffect(() => {
     refreshNotifState()
     // Keep in sync if user changes permission outside the app
     const iv = setInterval(() => refreshNotifState(), 3000)
     return () => clearInterval(iv)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [refreshNotifState])
 
   const handleEnableNotifications = async () => {
     if (!notifSupported) return
@@ -173,6 +186,45 @@ export default function SettingsPage() {
     setNotifEnabled(false)
     toast({ title: 'Lembretes desativados', description: 'Você não receberá mais alertas.' })
   }
+
+  const refreshAutoBackupSnapshots = useCallback(async () => {
+    const snapshots = await listAutoBackupSnapshots()
+    setAutoBackupSnapshots(snapshots)
+  }, [listAutoBackupSnapshots])
+
+  const applyAutoBackupConfig = async (nextConfig: AutoBackupConfig) => {
+    const normalized = setAutoBackupConfig(nextConfig)
+    setAutoBackupConfigState(normalized)
+    await pruneAutoBackupSnapshots(normalized.retention)
+    await refreshAutoBackupSnapshots()
+  }
+
+  const handleRunBackupNow = async () => {
+    try {
+      await createAutoBackupSnapshot()
+      await pruneAutoBackupSnapshots(autoBackupConfig.retention)
+      await refreshAutoBackupSnapshots()
+      toast({ title: 'Snapshot criado', description: 'Backup local salvo com sucesso.' })
+    } catch {
+      toast({ title: 'Erro ao criar snapshot', variant: 'destructive' })
+    }
+  }
+
+  const handleRestoreSnapshot = async () => {
+    if (!restoreSnapshotId) return
+    try {
+      await restoreAutoBackupSnapshot(restoreSnapshotId)
+      setRestoreSnapshotId(null)
+      toast({ title: 'Restauração concluída!', description: 'Dados restaurados pelo snapshot selecionado.' })
+    } catch {
+      toast({ title: 'Erro ao restaurar snapshot', variant: 'destructive' })
+    }
+  }
+
+  useEffect(() => {
+    setAutoBackupConfigState(getAutoBackupConfig())
+    refreshAutoBackupSnapshots().catch(() => {})
+  }, [refreshAutoBackupSnapshots])
 
   return (
     <div className="min-h-screen bg-background pb-32">
@@ -280,6 +332,115 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+          </div>
+        </Section>
+
+        <Section title="Backup automático" icon={<Database className="w-4 h-4" />}>
+          <div className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">
+                  Status: {autoBackupConfig.enabled ? 'Ativado' : 'Desativado'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Snapshots locais com retenção automática.
+                </p>
+              </div>
+              <Button
+                variant={autoBackupConfig.enabled ? 'outline' : 'default'}
+                onClick={() =>
+                  applyAutoBackupConfig({
+                    ...autoBackupConfig,
+                    enabled: !autoBackupConfig.enabled,
+                  }).catch(() => {
+                    toast({ title: 'Erro ao salvar configuração', variant: 'destructive' })
+                  })
+                }
+              >
+                {autoBackupConfig.enabled ? 'Desativar' : 'Ativar'}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={autoBackupConfig.frequency === 'daily' ? 'default' : 'outline'}
+                onClick={() =>
+                  applyAutoBackupConfig({
+                    ...autoBackupConfig,
+                    frequency: 'daily',
+                  }).catch(() => {
+                    toast({ title: 'Erro ao salvar configuração', variant: 'destructive' })
+                  })
+                }
+              >
+                Diário
+              </Button>
+              <Button
+                type="button"
+                variant={autoBackupConfig.frequency === 'weekly' ? 'default' : 'outline'}
+                onClick={() =>
+                  applyAutoBackupConfig({
+                    ...autoBackupConfig,
+                    frequency: 'weekly',
+                  }).catch(() => {
+                    toast({ title: 'Erro ao salvar configuração', variant: 'destructive' })
+                  })
+                }
+              >
+                Semanal
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">Retenção (1 a 60 snapshots)</p>
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={autoBackupConfig.retention}
+                onChange={(e) => {
+                  const value = Number.parseInt(e.target.value, 10)
+                  const nextRetention = Number.isFinite(value) ? value : autoBackupConfig.retention
+                  setAutoBackupConfigState({ ...autoBackupConfig, retention: nextRetention })
+                }}
+                onBlur={() =>
+                  applyAutoBackupConfig(autoBackupConfig).catch(() => {
+                    toast({ title: 'Erro ao salvar configuração', variant: 'destructive' })
+                  })
+                }
+                className="w-full border rounded-lg px-3 py-2 text-sm bg-background"
+              />
+            </div>
+
+            <Button type="button" variant="outline" onClick={handleRunBackupNow}>
+              Gerar snapshot agora
+            </Button>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Pontos de restauração</p>
+              {!autoBackupSnapshots.length ? (
+                <p className="text-xs text-muted-foreground">Nenhum snapshot disponível.</p>
+              ) : (
+                autoBackupSnapshots.map((snapshot) => (
+                  <div key={snapshot.id} className="rounded-xl border p-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{formatBackupDateLabel(snapshot.createdAt)}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {Math.round(snapshot.payload.length / 1024)} KB
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setRestoreSnapshotId(snapshot.id)}
+                    >
+                      Restaurar
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </Section>
 
@@ -424,6 +585,15 @@ export default function SettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={restoreSnapshotId !== null}
+        onOpenChange={(open) => !open && setRestoreSnapshotId(null)}
+        title="Restaurar snapshot"
+        description="Isso substituirá os dados atuais pelos dados do ponto de restauração selecionado."
+        confirmLabel="Restaurar snapshot"
+        onConfirm={handleRestoreSnapshot}
+      />
 
       {/* Reset confirm */}
       {resetOpen && (

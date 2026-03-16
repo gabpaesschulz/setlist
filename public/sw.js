@@ -61,11 +61,11 @@ self.addEventListener('notificationclick', (event) => {
       const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       // Focus an existing tab if already open
       for (const client of clientsList) {
-        // @ts-ignore
+        // @ts-expect-error cliente do service worker não tipa url de forma estrita
         if (client.url && client.url.includes(self.origin)) {
-          // @ts-ignore
+          // @ts-expect-error cliente do service worker não tipa focus de forma estrita
           await client.focus();
-          // @ts-ignore
+          // @ts-expect-error cliente do service worker não tipa navigate de forma estrita
           await client.navigate(url);
           return;
         }

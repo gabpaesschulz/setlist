@@ -9,6 +9,7 @@ import type {
   ChecklistItem,
   EventReflection,
   EventWithRelations,
+  AutoBackupSnapshot,
 } from '@/types'
 import { getDemoData } from '@/lib/demo/data'
 import {
@@ -31,6 +32,7 @@ class SetlistDB extends Dexie {
   itinerary!: Table<ItineraryItem>
   checklist!: Table<ChecklistItem>
   reflections!: Table<EventReflection>
+  backups!: Table<AutoBackupSnapshot>
 
   constructor() {
     super('SetlistDB')
@@ -43,6 +45,17 @@ class SetlistDB extends Dexie {
       itinerary: 'id, eventId, order',
       checklist: 'id, eventId, order',
       reflections: 'id, eventId',
+    })
+    this.version(2).stores({
+      events: 'id, date, status, type, city',
+      tickets: 'id, eventId',
+      travels: 'id, eventId',
+      lodgings: 'id, eventId',
+      expenses: 'id, eventId, category, expenseDate',
+      itinerary: 'id, eventId, order',
+      checklist: 'id, eventId, order',
+      reflections: 'id, eventId',
+      backups: 'id, createdAt',
     })
   }
 }
@@ -390,6 +403,41 @@ export async function exportAllData(): Promise<string> {
     null,
     2,
   )
+}
+
+export async function listAutoBackupSnapshots(): Promise<AutoBackupSnapshot[]> {
+  const snapshots = await db.backups.toArray()
+  return snapshots.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+}
+
+export async function createAutoBackupSnapshot(payload: string): Promise<AutoBackupSnapshot> {
+  const snapshot: AutoBackupSnapshot = {
+    id: uuid(),
+    createdAt: now(),
+    payload,
+  }
+  await db.backups.add(snapshot)
+  return snapshot
+}
+
+export async function deleteAutoBackupSnapshots(ids: string[]): Promise<void> {
+  if (!ids.length) return
+  await db.backups.bulkDelete(ids)
+}
+
+export async function pruneAutoBackupSnapshots(retention: number): Promise<void> {
+  const normalizedRetention = Math.max(1, Math.round(retention))
+  const snapshots = await listAutoBackupSnapshots()
+  const toDelete = snapshots.slice(normalizedRetention).map((snapshot) => snapshot.id)
+  await deleteAutoBackupSnapshots(toDelete)
+}
+
+export async function restoreAutoBackupSnapshot(id: string): Promise<void> {
+  const snapshot = await db.backups.get(id)
+  if (!snapshot) {
+    throw new Error('Snapshot de backup não encontrado.')
+  }
+  await importAllData(snapshot.payload)
 }
 
 export async function importAllData(jsonStr: string): Promise<void> {

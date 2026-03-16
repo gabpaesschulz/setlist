@@ -4,6 +4,7 @@ import { ReactNode, useEffect } from 'react';
 import { BottomNav } from '@/components/navigation/bottom-nav';
 import { useEventsStore } from '@/stores/events-store';
 import { Notifications } from '@/lib/notifications';
+import { getAutoBackupConfig, shouldRunAutoBackup } from '@/lib/domain/auto-backup';
 
 interface AppShellProps {
   children: ReactNode;
@@ -11,6 +12,9 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const loadAll = useEventsStore((s) => s.loadAll);
+  const createAutoBackupSnapshot = useEventsStore((s) => s.createAutoBackupSnapshot);
+  const listAutoBackupSnapshots = useEventsStore((s) => s.listAutoBackupSnapshots);
+  const pruneAutoBackupSnapshots = useEventsStore((s) => s.pruneAutoBackupSnapshots);
 
   // ── Initialize store on first mount ──────────────────────────────────────────
   useEffect(() => {
@@ -38,6 +42,18 @@ export function AppShell({ children }: AppShellProps) {
     if (!events.length) return;
     // Fire-and-forget; ignore result
     Notifications.runRemindersForEvents(events).catch(() => {});
+    const runAutoBackup = async () => {
+      const config = getAutoBackupConfig()
+      const snapshots = await listAutoBackupSnapshots()
+      const shouldRun = shouldRunAutoBackup({
+        config,
+        lastBackupAt: snapshots[0]?.createdAt,
+      })
+      if (!shouldRun) return
+      await createAutoBackupSnapshot()
+      await pruneAutoBackupSnapshots(config.retention)
+    }
+    runAutoBackup().catch(() => {})
     // Also re-check at local midnight boundaries
     const msUntilNextDay =
       new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 1).getTime() -
@@ -46,7 +62,7 @@ export function AppShell({ children }: AppShellProps) {
       Notifications.runRemindersForEvents(events).catch(() => {});
     }, Math.max(1000, msUntilNextDay));
     return () => clearTimeout(timer);
-  }, [events]);
+  }, [events, createAutoBackupSnapshot, listAutoBackupSnapshots, pruneAutoBackupSnapshots]);
 
   return (
     <div className="relative flex min-h-dvh flex-col bg-background">

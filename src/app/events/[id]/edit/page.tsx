@@ -1,7 +1,6 @@
 'use client'
 
 import { use } from 'react'
-import { useRouter } from 'next/navigation'
 import { useEventsStore } from '@/stores/events-store'
 import { EventForm } from '@/components/events/event-form'
 import { Button } from '@/components/ui/button'
