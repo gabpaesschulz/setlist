@@ -3,7 +3,15 @@
 import { useEffect, useState } from 'react'
 import type { Event } from '@/types'
 
-const artistImageCache = new Map<string, string | null>()
+const SUCCESS_CACHE_TTL_MS = 1000 * 60 * 60 * 12
+const EMPTY_CACHE_TTL_MS = 1000 * 60 * 10
+
+interface ArtistImageCacheEntry {
+  imageUrl: string | null
+  expiresAt: number
+}
+
+const artistImageCache = new Map<string, ArtistImageCacheEntry>()
 const pendingArtistRequests = new Map<string, Promise<string | null>>()
 
 function normalizeArtistKey(artist: string) {
@@ -12,15 +20,28 @@ function normalizeArtistKey(artist: string) {
 
 function getCachedArtistImage(artist: string) {
   const cacheKey = normalizeArtistKey(artist)
-  return artistImageCache.has(cacheKey) ? artistImageCache.get(cacheKey) ?? null : null
+  const cached = artistImageCache.get(cacheKey)
+  if (!cached) return null
+
+  if (cached.expiresAt <= Date.now()) {
+    artistImageCache.delete(cacheKey)
+    return null
+  }
+
+  return cached.imageUrl
 }
 
 async function requestArtistImage(artist: string): Promise<string | null> {
   const cacheKey = normalizeArtistKey(artist)
   if (!cacheKey) return null
 
-  if (artistImageCache.has(cacheKey)) {
-    return artistImageCache.get(cacheKey) ?? null
+  const cached = artistImageCache.get(cacheKey)
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.imageUrl
+  }
+
+  if (cached && cached.expiresAt <= Date.now()) {
+    artistImageCache.delete(cacheKey)
   }
 
   const pendingRequest = pendingArtistRequests.get(cacheKey)
@@ -34,11 +55,14 @@ async function requestArtistImage(artist: string): Promise<string | null> {
         typeof payload.imageUrl === 'string' && payload.imageUrl.trim()
           ? payload.imageUrl.trim()
           : null
-      artistImageCache.set(cacheKey, imageUrl)
+
+      artistImageCache.set(cacheKey, {
+        imageUrl,
+        expiresAt: Date.now() + (imageUrl ? SUCCESS_CACHE_TTL_MS : EMPTY_CACHE_TTL_MS),
+      })
       return imageUrl
     })
     .catch(() => {
-      artistImageCache.set(cacheKey, null)
       return null
     })
     .finally(() => {
