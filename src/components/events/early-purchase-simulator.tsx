@@ -67,10 +67,13 @@ export function EarlyPurchaseSimulator({
   lodging,
   totalSpent,
 }: EarlyPurchaseSimulatorProps) {
-  const purchaseSimulations = useEventsStore((state) =>
-    state.purchaseSimulations
-      .filter((item) => item.eventId === eventId)
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+  const allPurchaseSimulations = useEventsStore((state) => state.purchaseSimulations);
+  const purchaseSimulations = useMemo(
+    () =>
+      allPurchaseSimulations
+        .filter((item) => item.eventId === eventId)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+    [allPurchaseSimulations, eventId],
   );
   const upsertPurchaseSimulation = useEventsStore((state) => state.upsertPurchaseSimulation);
   const deletePurchaseSimulation = useEventsStore((state) => state.deletePurchaseSimulation);
