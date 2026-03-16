@@ -1,6 +1,6 @@
 'use client'
 
-import { use } from 'react'
+import { use, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -28,7 +28,6 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
 import { toast } from '@/components/ui/use-toast'
 
 const TYPE_GRADIENTS: Record<string, string> = {
@@ -55,7 +54,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const deleteEvent = useEventsStore((s) => s.deleteEvent)
   const completeEvent = useEventsStore((s) => s.completeEvent)
   const duplicateEvent = useEventsStore((s) => s.duplicateEvent)
-  const auditLogs = useEventsStore((s) => s.getAuditLogsByEventId(id))
+  const auditLogsSource = useEventsStore((s) => s.auditLogs)
 
   const event = events.find((e) => e.id === id)
   const ticket = tickets.find((t) => t.eventId === id)
@@ -65,6 +64,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const eventItinerary = itinerary.filter((i) => i.eventId === id).sort((a, b) => a.order - b.order)
   const eventChecklist = checklist.filter((c) => c.eventId === id).sort((a, b) => a.order - b.order)
   const reflection = reflections.find((r) => r.eventId === id)
+  const auditLogs = useMemo(
+    () => auditLogsSource.filter((log) => log.eventId === id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [auditLogsSource, id]
+  )
 
   if (!event) {
     return (

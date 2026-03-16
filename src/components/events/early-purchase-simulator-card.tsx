@@ -62,7 +62,14 @@ export function EarlyPurchaseSimulatorCard({
 }: EarlyPurchaseSimulatorCardProps) {
   const upsertPurchaseSimulation = useEventsStore((s) => s.upsertPurchaseSimulation);
   const deletePurchaseSimulation = useEventsStore((s) => s.deletePurchaseSimulation);
-  const simulations = useEventsStore((s) => s.getPurchaseSimulationsByEventId(eventId));
+  const purchaseSimulations = useEventsStore((s) => s.purchaseSimulations);
+  const simulations = useMemo(
+    () =>
+      purchaseSimulations
+        .filter((item) => item.eventId === eventId)
+        .sort((a, b) => a.targetDate.localeCompare(b.targetDate)),
+    [eventId, purchaseSimulations],
+  );
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
