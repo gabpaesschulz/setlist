@@ -20,6 +20,7 @@ import { EVENT_TYPES } from '@/lib/constants';
 import { formatDateLong, formatDate } from '@/lib/formatters';
 import { getCountdown } from '@/lib/domain/countdown';
 import { calculateReadiness } from '@/lib/domain/readiness';
+import { useEventCoverImage } from '@/hooks/use-event-cover-image';
 import { ReadinessBar } from './readiness-bar';
 import { EventTypeBadge, EventStatusBadge } from './event-status-badge';
 import { CountdownBadge } from './countdown-badge';
@@ -97,7 +98,8 @@ export function EventDetailHeader({
   const countdown = getCountdown(event.date, event.time);
   const gradient = typeGradient[event.type];
   const typeMeta = EVENT_TYPES[event.type];
-  const hasCoverImage = !!event.coverImage;
+  const coverImage = useEventCoverImage(event);
+  const hasCoverImage = !!coverImage;
 
   const readiness = calculateReadiness({
     event,
@@ -125,7 +127,7 @@ export function EventDetailHeader({
       {hasCoverImage && (
         <>
           <img
-            src={event.coverImage}
+            src={coverImage}
             alt={`Capa do evento ${event.title || event.artist}`}
             className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-35"
           />
