@@ -30,6 +30,15 @@ export const purchaseTypeSchema = z.enum(['inteira', 'meia', 'social', 'cortesia
 
 export const readinessLevelSchema = z.enum(['em_aberto', 'organizando', 'quase_pronto', 'pronto'])
 
+const optionalMoneySchema = z.preprocess(
+  (value) => {
+    if (value === '' || value === null || value === undefined) return undefined
+    if (typeof value === 'number' && Number.isNaN(value)) return undefined
+    return value
+  },
+  z.number().min(0, 'Valor não pode ser negativo').optional(),
+)
+
 // ─── Event Schema ─────────────────────────────────────────────────────────────
 
 export const eventSchema = z.object({
@@ -57,6 +66,18 @@ export const eventSchema = z.object({
     .max(2, 'Use a sigla do estado (ex: SP)')
     .toUpperCase(),
   venue: z.string().min(1, 'Local é obrigatório').max(200, 'Nome do local muito longo'),
+  budgetTotal: optionalMoneySchema,
+  budgetByCategory: z
+    .object({
+      ingresso: optionalMoneySchema,
+      transporte: optionalMoneySchema,
+      hospedagem: optionalMoneySchema,
+      alimentacao: optionalMoneySchema,
+      merch: optionalMoneySchema,
+      extras: optionalMoneySchema,
+      outro: optionalMoneySchema,
+    })
+    .optional(),
   notes: z.string().max(2000, 'Notas muito longas').optional(),
   coverImage: z.string().url('URL da imagem inválida').optional(),
   createdAt: z.string(),
@@ -226,6 +247,16 @@ export const eventFormSchema = z.object({
   city: z.string().min(1, 'Cidade é obrigatória').max(100),
   state: z.string().min(2, 'Estado é obrigatório').max(2, 'Use a sigla do estado (ex: SP)'),
   venue: z.string().min(1, 'Local é obrigatório').max(200),
+  budgetTotal: optionalMoneySchema,
+  budgetByCategory: z.object({
+    ingresso: optionalMoneySchema,
+    transporte: optionalMoneySchema,
+    hospedagem: optionalMoneySchema,
+    alimentacao: optionalMoneySchema,
+    merch: optionalMoneySchema,
+    extras: optionalMoneySchema,
+    outro: optionalMoneySchema,
+  }),
   notes: z.string().max(2000).optional(),
   coverImage: z.string().url('URL da imagem inválida').optional().or(z.literal('')),
 

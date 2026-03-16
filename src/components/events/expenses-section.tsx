@@ -6,10 +6,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus, Trash2, X, TrendingUp, Ticket, Bus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Expense, ExpenseCategory, Ticket as TicketType, Travel } from "@/types";
+import type { Event, Expense, ExpenseCategory, Ticket as TicketType, Travel } from "@/types";
 import { EXPENSE_CATEGORIES } from "@/lib/constants";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { useEventsStore } from "@/stores/events-store";
+import { getEventBudgetGuardrails } from "@/lib/domain/expenses";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,7 @@ type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 
 interface ExpensesSectionProps {
   eventId: string;
+  event?: Event;
   expenses: Expense[];
   ticket?: TicketType;
   travel?: Travel;
@@ -163,7 +165,7 @@ function AddExpenseForm({ eventId, onClose }: { eventId: string; onClose: () => 
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function ExpensesSection({ eventId, expenses, ticket, travel }: ExpensesSectionProps) {
+export function ExpensesSection({ eventId, event, expenses, ticket, travel }: ExpensesSectionProps) {
   const [showForm, setShowForm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const deleteExpense = useEventsStore((s) => s.deleteExpense);
@@ -191,6 +193,31 @@ export function ExpensesSection({ eventId, expenses, ticket, travel }: ExpensesS
       count: items.length,
     }))
     .sort((a, b) => b.total - a.total);
+
+  const spentByCategory: Record<ExpenseCategory, number> = {
+    ingresso: ticketCost,
+    transporte: travelCost,
+    hospedagem: 0,
+    alimentacao: 0,
+    merch: 0,
+    extras: 0,
+    outro: 0,
+  };
+  for (const expense of expenses) {
+    spentByCategory[expense.category] += expense.amount;
+  }
+
+  const budgetGuardrails =
+    event?.budgetTotal && event.date
+      ? getEventBudgetGuardrails({
+          budgetTotal: event.budgetTotal,
+          budgetByCategory: event.budgetByCategory,
+          totalSpent: total,
+          spentByCategory,
+          eventDate: event.date,
+          expenseDates: expenses.map((expense) => expense.expenseDate),
+        })
+      : null;
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
@@ -239,6 +266,77 @@ export function ExpensesSection({ eventId, expenses, ticket, travel }: ExpensesS
                 );
               })}
             </div>
+          )}
+        </div>
+      )}
+
+      {budgetGuardrails && (
+        <div
+          className={cn(
+            "rounded-2xl border px-4 py-4",
+            budgetGuardrails.summary.status === "over" && "border-destructive/40 bg-destructive/5",
+            budgetGuardrails.summary.status === "critical" && "border-amber-400/40 bg-amber-500/5",
+            budgetGuardrails.summary.status === "warning" && "border-yellow-400/40 bg-yellow-500/5",
+            budgetGuardrails.summary.status === "ok" && "border-emerald-400/40 bg-emerald-500/5",
+          )}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Guardrail de orçamento</p>
+              <p className="text-sm font-semibold text-foreground">
+                {budgetGuardrails.summary.status === "over" && "Orçamento estourado"}
+                {budgetGuardrails.summary.status === "critical" && "Risco alto de estouro"}
+                {budgetGuardrails.summary.status === "warning" && "Atenção ao ritmo de gastos"}
+                {budgetGuardrails.summary.status === "ok" && "Orçamento sob controle"}
+              </p>
+            </div>
+            <span className="text-xs font-semibold text-muted-foreground">
+              {Math.round(budgetGuardrails.summary.projectedRatio * 100)}% projetado
+            </span>
+          </div>
+
+          <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+            <p>
+              Gasto atual:{" "}
+              <span className="font-semibold text-foreground">
+                {formatCurrency(budgetGuardrails.summary.totalSpent)}
+              </span>
+            </p>
+            <p>
+              Orçamento planejado:{" "}
+              <span className="font-semibold text-foreground">
+                {formatCurrency(budgetGuardrails.summary.budgetTotal)}
+              </span>
+            </p>
+            <p>
+              Projeção até o evento:{" "}
+              <span className="font-semibold text-foreground">
+                {formatCurrency(budgetGuardrails.summary.projectedTotal)}
+              </span>
+            </p>
+          </div>
+
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-background/70">
+            <div
+              className={cn(
+                "h-full",
+                budgetGuardrails.summary.status === "over" && "bg-destructive",
+                budgetGuardrails.summary.status === "critical" && "bg-amber-500",
+                budgetGuardrails.summary.status === "warning" && "bg-yellow-500",
+                budgetGuardrails.summary.status === "ok" && "bg-emerald-500",
+              )}
+              style={{ width: `${Math.min(100, Math.max(4, budgetGuardrails.summary.spentRatio * 100))}%` }}
+            />
+          </div>
+
+          {budgetGuardrails.topPressureCategories.length > 0 && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Maior pressão:{" "}
+              {budgetGuardrails.topPressureCategories
+                .map((category) => EXPENSE_CATEGORIES[category].label.toLowerCase())
+                .join(" e ")}
+              .
+            </p>
           )}
         </div>
       )}

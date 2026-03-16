@@ -43,6 +43,7 @@ import {
   PURCHASE_TYPES,
   TICKET_PROVIDERS,
   BRAZILIAN_STATES,
+  EXPENSE_CATEGORIES,
 } from '@/lib/constants';
 import type { EventWithRelations } from '@/types';
 
@@ -91,6 +92,16 @@ function buildDefaults(initial?: EventWithRelations): EventFormSchema {
     city:       e?.city       ?? '',
     state:      e?.state      ?? '',
     venue:      e?.venue      ?? '',
+    budgetTotal: e?.budgetTotal ?? undefined,
+    budgetByCategory: {
+      ingresso: e?.budgetByCategory?.ingresso ?? undefined,
+      transporte: e?.budgetByCategory?.transporte ?? undefined,
+      hospedagem: e?.budgetByCategory?.hospedagem ?? undefined,
+      alimentacao: e?.budgetByCategory?.alimentacao ?? undefined,
+      merch: e?.budgetByCategory?.merch ?? undefined,
+      extras: e?.budgetByCategory?.extras ?? undefined,
+      outro: e?.budgetByCategory?.outro ?? undefined,
+    },
     notes:      e?.notes      ?? '',
     coverImage: e?.coverImage ?? '',
 
@@ -131,13 +142,23 @@ function buildDefaults(initial?: EventWithRelations): EventFormSchema {
   };
 }
 
+function normalizeBudgetByCategory(
+  values: EventFormSchema['budgetByCategory'],
+): EventFormSchema['budgetByCategory'] | undefined {
+  const normalized = Object.fromEntries(
+    Object.entries(values ?? {}).filter(([, value]) => typeof value === 'number' && value >= 0),
+  ) as EventFormSchema['budgetByCategory']
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Returns true when a section has meaningful data filled in. */
 function sectionHasData(id: SectionId, values: EventFormSchema): boolean {
   switch (id) {
     case 'evento':
-      return !!(values.title || values.artist || values.date || values.city);
+      return !!(values.title || values.artist || values.date || values.city || values.budgetTotal);
     case 'ingresso':
       return !!(
         values.ticket?.purchased ||
@@ -322,6 +343,7 @@ export function EventForm({ mode, initialData }: EventFormProps) {
     setSaving(true);
     try {
       let eventId: string;
+      const normalizedBudgetByCategory = normalizeBudgetByCategory(data.budgetByCategory)
 
       if (mode === 'create') {
         const created = await addEvent({
@@ -335,6 +357,8 @@ export function EventForm({ mode, initialData }: EventFormProps) {
           city:       data.city,
           state:      data.state,
           venue:      data.venue,
+          budgetTotal: data.budgetTotal,
+          budgetByCategory: normalizedBudgetByCategory,
           notes:      data.notes  || undefined,
           coverImage: data.coverImage || undefined,
         });
@@ -358,6 +382,8 @@ export function EventForm({ mode, initialData }: EventFormProps) {
           city:       data.city,
           state:      data.state,
           venue:      data.venue,
+          budgetTotal: data.budgetTotal,
+          budgetByCategory: normalizedBudgetByCategory,
           notes:      data.notes  || undefined,
           coverImage: data.coverImage || undefined,
         });
@@ -644,6 +670,41 @@ export function EventForm({ mode, initialData }: EventFormProps) {
                     placeholder="Ex: Parque Olímpico"
                   />
                 </FormField>
+
+                <FormField
+                  label="Orçamento total (R$)"
+                  description="Defina um limite de gasto para receber alertas preditivos no evento."
+                  error={errors.budgetTotal?.message}
+                >
+                  <Input
+                    {...register('budgetTotal', { valueAsNumber: true })}
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    placeholder="0,00"
+                  />
+                </FormField>
+
+                <div className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3">
+                  <p className="text-xs font-semibold text-foreground">Orçamento por categoria (opcional)</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Object.entries(EXPENSE_CATEGORIES).map(([category, meta]) => (
+                      <FormField
+                        key={category}
+                        label={`${meta.icon} ${meta.label}`}
+                        error={errors.budgetByCategory?.[category as keyof EventFormSchema['budgetByCategory']]?.message}
+                      >
+                        <Input
+                          {...register(`budgetByCategory.${category}` as const, { valueAsNumber: true })}
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          placeholder="0,00"
+                        />
+                      </FormField>
+                    ))}
+                  </div>
+                </div>
 
                 <FormField
                   label="Imagem de capa (opcional)"

@@ -8,6 +8,126 @@ function parseExpenseDate(expense: Expense): Date | null {
   return isValid(date) ? date : null
 }
 
+function getBudgetStatus(ratio: number): 'ok' | 'warning' | 'critical' | 'over' {
+  if (ratio >= 1) return 'over'
+  if (ratio >= 0.9) return 'critical'
+  if (ratio >= 0.75) return 'warning'
+  return 'ok'
+}
+
+function calculateProjectedTotal(params: {
+  totalSpent: number
+  eventDate: string
+  expenseDates: string[]
+  todayIso?: string
+}): number {
+  const eventDate = parseISO(params.eventDate)
+  if (!isValid(eventDate)) return params.totalSpent
+
+  const today = params.todayIso ? parseISO(params.todayIso) : new Date()
+  if (!isValid(today)) return params.totalSpent
+
+  if (today >= eventDate) return params.totalSpent
+
+  const validExpenseDates = params.expenseDates
+    .map((date) => parseISO(date))
+    .filter((date) => isValid(date) && date <= today)
+    .sort((a, b) => a.getTime() - b.getTime())
+
+  if (validExpenseDates.length === 0) return params.totalSpent
+
+  const startDate = validExpenseDates[0]
+  const elapsedDays = Math.max(1, Math.ceil((today.getTime() - startDate.getTime()) / 86400000) + 1)
+  const totalWindowDays = Math.max(
+    elapsedDays,
+    Math.ceil((eventDate.getTime() - startDate.getTime()) / 86400000) + 1,
+  )
+
+  return (params.totalSpent / elapsedDays) * totalWindowDays
+}
+
+export interface EventBudgetGuardrails {
+  summary: {
+    budgetTotal: number
+    totalSpent: number
+    projectedTotal: number
+    spentRatio: number
+    projectedRatio: number
+    remaining: number
+    status: 'ok' | 'warning' | 'critical' | 'over'
+  }
+  categories: Array<{
+    category: ExpenseCategory
+    budget: number
+    spent: number
+    ratio: number
+    status: 'ok' | 'warning' | 'critical' | 'over'
+  }>
+  topPressureCategories: ExpenseCategory[]
+}
+
+export function getEventBudgetGuardrails(params: {
+  budgetTotal?: number
+  budgetByCategory?: Partial<Record<ExpenseCategory, number>>
+  totalSpent: number
+  spentByCategory: Record<ExpenseCategory, number>
+  eventDate: string
+  expenseDates: string[]
+  todayIso?: string
+}): EventBudgetGuardrails | null {
+  if (!params.budgetTotal || params.budgetTotal <= 0) return null
+
+  const projectedTotal = calculateProjectedTotal({
+    totalSpent: params.totalSpent,
+    eventDate: params.eventDate,
+    expenseDates: params.expenseDates,
+    todayIso: params.todayIso,
+  })
+  const spentRatio = params.totalSpent / params.budgetTotal
+  const projectedRatio = projectedTotal / params.budgetTotal
+  const spentStatus = getBudgetStatus(spentRatio)
+  const projectedStatus = getBudgetStatus(projectedRatio)
+  const statusPriority = { ok: 0, warning: 1, critical: 2, over: 3 }
+  const status =
+    statusPriority[projectedStatus] > statusPriority[spentStatus]
+      ? projectedStatus
+      : spentStatus
+
+  const categories = Object.entries(params.budgetByCategory ?? {})
+    .filter(([, budget]) => typeof budget === 'number' && budget > 0)
+    .map(([category, budget]) => {
+      const spent = params.spentByCategory[category as ExpenseCategory] ?? 0
+      const ratio = spent / (budget as number)
+      return {
+        category: category as ExpenseCategory,
+        budget: budget as number,
+        spent,
+        ratio,
+        status: getBudgetStatus(ratio),
+      }
+    })
+    .sort((a, b) => b.ratio - a.ratio || b.spent - a.spent)
+
+  const topPressureCategories = categories
+    .filter((item) => item.ratio >= 0.75)
+    .slice(0, 2)
+    .map((item) => item.category)
+
+  return {
+    summary: {
+      budgetTotal: params.budgetTotal,
+      totalSpent: params.totalSpent,
+      projectedTotal,
+      spentRatio,
+      projectedRatio,
+      remaining: params.budgetTotal - params.totalSpent,
+      status,
+    },
+    categories,
+    topPressureCategories,
+  }
+}
+
 /**
  * Merges manual expenses with automatic expenses derived from Tickets, Travel, and Lodging.
  * This provides a unified view for charts and totals.

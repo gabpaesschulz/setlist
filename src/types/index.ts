@@ -40,6 +40,8 @@ export interface Event {
   city: string
   state: string
   venue: string
+  budgetTotal?: number
+  budgetByCategory?: Partial<Record<ExpenseCategory, number>>
   notes?: string
   coverImage?: string
   createdAt: string

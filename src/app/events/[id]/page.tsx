@@ -264,7 +264,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           </TabsContent>
 
           <TabsContent value="gastos" className="mt-0 space-y-4">
-            <ExpensesSection eventId={id} expenses={eventExpenses} ticket={ticket} travel={travel} />
+            <ExpensesSection eventId={id} event={event} expenses={eventExpenses} ticket={ticket} travel={travel} />
           </TabsContent>
 
           <TabsContent value="mais" className="mt-0 space-y-4">
