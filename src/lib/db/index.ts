@@ -10,6 +10,8 @@ import type {
   EventReflection,
   EventWithRelations,
   AutoBackupSnapshot,
+  PurchaseSimulation,
+  EventAuditLog,
 } from '@/types'
 import { getDemoData } from '@/lib/demo/data'
 import {
@@ -33,6 +35,8 @@ class SetlistDB extends Dexie {
   checklist!: Table<ChecklistItem>
   reflections!: Table<EventReflection>
   backups!: Table<AutoBackupSnapshot>
+  purchaseSimulations!: Table<PurchaseSimulation>
+  auditLogs!: Table<EventAuditLog>
 
   constructor() {
     super('SetlistDB')
@@ -56,6 +60,31 @@ class SetlistDB extends Dexie {
       checklist: 'id, eventId, order',
       reflections: 'id, eventId',
       backups: 'id, createdAt',
+    })
+    this.version(3).stores({
+      events: 'id, date, status, type, city',
+      tickets: 'id, eventId',
+      travels: 'id, eventId',
+      lodgings: 'id, eventId',
+      expenses: 'id, eventId, category, expenseDate',
+      itinerary: 'id, eventId, order',
+      checklist: 'id, eventId, order',
+      reflections: 'id, eventId',
+      backups: 'id, createdAt',
+      purchaseSimulations: 'id, eventId, category, targetDate',
+    })
+    this.version(4).stores({
+      events: 'id, date, status, type, city',
+      tickets: 'id, eventId',
+      travels: 'id, eventId',
+      lodgings: 'id, eventId',
+      expenses: 'id, eventId, category, expenseDate',
+      itinerary: 'id, eventId, order',
+      checklist: 'id, eventId, order',
+      reflections: 'id, eventId',
+      backups: 'id, createdAt',
+      purchaseSimulations: 'id, eventId, category, targetDate',
+      auditLogs: 'id, eventId, createdAt, entityType, action',
     })
   }
 }
@@ -118,6 +147,8 @@ export async function deleteEvent(id: string): Promise<void> {
       db.itinerary,
       db.checklist,
       db.reflections,
+      db.purchaseSimulations,
+      db.auditLogs,
     ],
     async () => {
       await db.events.delete(id)
@@ -128,6 +159,8 @@ export async function deleteEvent(id: string): Promise<void> {
       await db.itinerary.where('eventId').equals(id).delete()
       await db.checklist.where('eventId').equals(id).delete()
       await db.reflections.where('eventId').equals(id).delete()
+      await db.purchaseSimulations.where('eventId').equals(id).delete()
+      await db.auditLogs.where('eventId').equals(id).delete()
     },
   )
 }
@@ -364,6 +397,54 @@ export async function upsertReflection(
   return reflection
 }
 
+export async function getPurchaseSimulationsByEventId(
+  eventId: string,
+): Promise<PurchaseSimulation[]> {
+  return db.purchaseSimulations.where('eventId').equals(eventId).sortBy('targetDate')
+}
+
+export async function upsertPurchaseSimulation(
+  data: Omit<PurchaseSimulation, 'id' | 'createdAt' | 'updatedAt'> & { id?: string },
+): Promise<PurchaseSimulation> {
+  const id = data.id ?? uuid()
+  const existing = data.id ? await db.purchaseSimulations.get(data.id) : undefined
+  const simulation: PurchaseSimulation = {
+    ...data,
+    id,
+    createdAt: existing?.createdAt ?? now(),
+    updatedAt: now(),
+  }
+  await db.purchaseSimulations.put(simulation)
+  return simulation
+}
+
+export async function deletePurchaseSimulation(id: string): Promise<void> {
+  await db.purchaseSimulations.delete(id)
+}
+
+/**
+ * Lista os registros de auditoria de um evento em ordem cronológica decrescente.
+ */
+export async function getAuditLogsByEventId(eventId: string): Promise<EventAuditLog[]> {
+  const logs = await db.auditLogs.where('eventId').equals(eventId).toArray()
+  return logs.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+}
+
+/**
+ * Persiste um novo registro de auditoria vinculado a um evento.
+ */
+export async function createEventAuditLog(
+  data: Omit<EventAuditLog, 'id' | 'createdAt'>,
+): Promise<EventAuditLog> {
+  const log: EventAuditLog = {
+    ...data,
+    id: uuid(),
+    createdAt: now(),
+  }
+  await db.auditLogs.add(log)
+  return log
+}
+
 // ─── Export / Import / Reset / Seed ──────────────────────────────────────────
 
 export async function exportAllData(): Promise<string> {
@@ -376,6 +457,8 @@ export async function exportAllData(): Promise<string> {
     itinerary,
     checklist,
     reflections,
+    purchaseSimulations,
+    auditLogs,
   ] = await Promise.all([
     db.events.toArray(),
     db.tickets.toArray(),
@@ -385,6 +468,8 @@ export async function exportAllData(): Promise<string> {
     db.itinerary.toArray(),
     db.checklist.toArray(),
     db.reflections.toArray(),
+    db.purchaseSimulations.toArray(),
+    db.auditLogs.toArray(),
   ])
 
   return JSON.stringify(
@@ -399,6 +484,8 @@ export async function exportAllData(): Promise<string> {
       itinerary,
       checklist,
       reflections,
+      purchaseSimulations,
+      auditLogs,
     },
     null,
     2,
@@ -454,6 +541,8 @@ export async function importAllData(jsonStr: string): Promise<void> {
       db.itinerary,
       db.checklist,
       db.reflections,
+      db.purchaseSimulations,
+      db.auditLogs,
     ],
     async () => {
       await Promise.all([
@@ -465,6 +554,8 @@ export async function importAllData(jsonStr: string): Promise<void> {
         db.itinerary.clear(),
         db.checklist.clear(),
         db.reflections.clear(),
+        db.purchaseSimulations.clear(),
+        db.auditLogs.clear(),
       ])
 
       await Promise.all([
@@ -476,6 +567,10 @@ export async function importAllData(jsonStr: string): Promise<void> {
         data.itinerary.length ? db.itinerary.bulkAdd(data.itinerary) : Promise.resolve(),
         data.checklist.length ? db.checklist.bulkAdd(data.checklist) : Promise.resolve(),
         data.reflections.length ? db.reflections.bulkAdd(data.reflections) : Promise.resolve(),
+        data.purchaseSimulations.length
+          ? db.purchaseSimulations.bulkAdd(data.purchaseSimulations)
+          : Promise.resolve(),
+        data.auditLogs.length ? db.auditLogs.bulkAdd(data.auditLogs) : Promise.resolve(),
       ])
     },
   )
@@ -508,6 +603,8 @@ export async function importDataByEventIds(
       db.itinerary,
       db.checklist,
       db.reflections,
+      db.purchaseSimulations,
+      db.auditLogs,
     ],
     async () => {
       await Promise.all([
@@ -519,6 +616,8 @@ export async function importDataByEventIds(
         db.itinerary.where('eventId').anyOf(selectedIds).delete(),
         db.checklist.where('eventId').anyOf(selectedIds).delete(),
         db.reflections.where('eventId').anyOf(selectedIds).delete(),
+        db.purchaseSimulations.where('eventId').anyOf(selectedIds).delete(),
+        db.auditLogs.where('eventId').anyOf(selectedIds).delete(),
       ])
 
       await Promise.all([
@@ -546,6 +645,12 @@ export async function importDataByEventIds(
         selectedData.reflections.length
           ? db.reflections.bulkPut(selectedData.reflections)
           : Promise.resolve(),
+        selectedData.purchaseSimulations.length
+          ? db.purchaseSimulations.bulkPut(selectedData.purchaseSimulations)
+          : Promise.resolve(),
+        selectedData.auditLogs.length
+          ? db.auditLogs.bulkPut(selectedData.auditLogs)
+          : Promise.resolve(),
       ])
     },
   )
@@ -563,6 +668,8 @@ export async function resetAllData(): Promise<void> {
       db.itinerary,
       db.checklist,
       db.reflections,
+      db.purchaseSimulations,
+      db.auditLogs,
     ],
     async () => {
       await Promise.all([
@@ -574,6 +681,8 @@ export async function resetAllData(): Promise<void> {
         db.itinerary.clear(),
         db.checklist.clear(),
         db.reflections.clear(),
+        db.purchaseSimulations.clear(),
+        db.auditLogs.clear(),
       ])
     },
   )

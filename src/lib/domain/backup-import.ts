@@ -8,6 +8,8 @@ type BackupCollectionKey =
   | 'itinerary'
   | 'checklist'
   | 'reflections'
+  | 'auditLogs'
+  | 'purchaseSimulations'
 
 const backupCollectionKeys: BackupCollectionKey[] = [
   'tickets',
@@ -17,6 +19,8 @@ const backupCollectionKeys: BackupCollectionKey[] = [
   'itinerary',
   'checklist',
   'reflections',
+  'auditLogs',
+  'purchaseSimulations',
 ]
 
 export interface BackupImportPreviewItem {
@@ -83,5 +87,7 @@ export function filterBackupByEventIds(
     itinerary: data.itinerary.filter((record) => selectedIds.has(record.eventId)),
     checklist: data.checklist.filter((record) => selectedIds.has(record.eventId)),
     reflections: data.reflections.filter((record) => selectedIds.has(record.eventId)),
+    auditLogs: data.auditLogs.filter((record) => selectedIds.has(record.eventId)),
+    purchaseSimulations: data.purchaseSimulations.filter((record) => selectedIds.has(record.eventId)),
   }
 }

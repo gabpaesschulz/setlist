@@ -78,6 +78,21 @@ export const eventSchema = z.object({
       outro: optionalMoneySchema,
     })
     .optional(),
+  purchaseSimulator: z
+    .object({
+      targetDate: z
+        .string()
+        .min(1, 'Data alvo é obrigatória')
+        .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data alvo deve estar no formato YYYY-MM-DD'),
+      limitByCategory: z
+        .object({
+          ingresso: optionalMoneySchema,
+          transporte: optionalMoneySchema,
+          hospedagem: optionalMoneySchema,
+        })
+        .optional(),
+    })
+    .optional(),
   notes: z.string().max(2000, 'Notas muito longas').optional(),
   coverImage: z.string().url('URL da imagem inválida').optional(),
   createdAt: z.string(),
@@ -160,6 +175,29 @@ export const expenseSchema = z.object({
 
 export type ExpenseSchema = z.infer<typeof expenseSchema>
 
+export const priceVolatilitySchema = z.enum(['baixa', 'media', 'alta'])
+export const availabilityRiskSchema = z.enum(['baixo', 'medio', 'alto'])
+export const earlyPurchaseCategorySchema = z.enum(['ingresso', 'transporte', 'hospedagem'])
+
+export const purchaseSimulationSchema = z.object({
+  id: z.string().min(1),
+  eventId: z.string().min(1, 'ID do evento é obrigatório'),
+  category: earlyPurchaseCategorySchema,
+  provider: z.string().min(1, 'Fornecedor é obrigatório').max(100),
+  currentPrice: z.number().min(0.01, 'Preço atual deve ser maior que zero'),
+  targetPrice: z.number().min(0.01, 'Preço alvo deve ser maior que zero'),
+  targetDate: z
+    .string()
+    .min(1, 'Data alvo é obrigatória')
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato YYYY-MM-DD'),
+  volatility: priceVolatilitySchema,
+  availabilityRisk: availabilityRiskSchema,
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+
+export type PurchaseSimulationSchema = z.infer<typeof purchaseSimulationSchema>
+
 // ─── Itinerary Item Schema ────────────────────────────────────────────────────
 
 export const itineraryItemSchema = z.object({
@@ -205,6 +243,48 @@ export const eventReflectionSchema = z.object({
 
 export type EventReflectionSchema = z.infer<typeof eventReflectionSchema>
 
+export const auditEntityTypeSchema = z.enum([
+  'event',
+  'ticket',
+  'travel',
+  'lodging',
+  'expense',
+  'itinerary',
+  'checklist',
+  'reflection',
+  'system',
+])
+
+export const auditActionSchema = z.enum([
+  'create',
+  'update',
+  'delete',
+  'complete',
+  'duplicate',
+  'restore',
+  'import',
+  'reset',
+])
+
+export const auditFieldChangeSchema = z.object({
+  field: z.string().min(1),
+  before: z.string().optional(),
+  after: z.string().optional(),
+})
+
+export const eventAuditLogSchema = z.object({
+  id: z.string().min(1),
+  eventId: z.string().min(1, 'ID do evento é obrigatório'),
+  entityType: auditEntityTypeSchema,
+  action: auditActionSchema,
+  source: z.string().min(1),
+  summary: z.string().min(1),
+  changes: z.array(auditFieldChangeSchema).default([]),
+  createdAt: z.string().min(1),
+})
+
+export type EventAuditLogSchema = z.infer<typeof eventAuditLogSchema>
+
 export const backupDataSchema = z.object({
   version: z.literal(1),
   exportedAt: z.string().min(1),
@@ -216,6 +296,8 @@ export const backupDataSchema = z.object({
   itinerary: z.array(itineraryItemSchema).default([]),
   checklist: z.array(checklistItemSchema).default([]),
   reflections: z.array(eventReflectionSchema).default([]),
+  auditLogs: z.array(eventAuditLogSchema).default([]),
+  purchaseSimulations: z.array(purchaseSimulationSchema).default([]),
 })
 
 export type BackupDataSchema = z.infer<typeof backupDataSchema>

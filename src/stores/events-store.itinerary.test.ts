@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ItineraryItem } from "@/types";
+import type { ItineraryItem, PurchaseSimulation } from "@/types";
 
 const mocks = vi.hoisted(() => ({
   dbUpdateItineraryItem: vi.fn(),
   dbDeleteItineraryItem: vi.fn(),
+  dbUpsertPurchaseSimulation: vi.fn(),
+  dbDeletePurchaseSimulation: vi.fn(),
   getBackupImportPreview: vi.fn(),
   importDataByEventIds: vi.fn(),
 }));
@@ -26,12 +28,19 @@ vi.mock("@/lib/db", () => ({
   updateChecklistItem: vi.fn(),
   deleteChecklistItem: vi.fn(),
   upsertReflection: vi.fn(),
+  upsertPurchaseSimulation: mocks.dbUpsertPurchaseSimulation,
+  deletePurchaseSimulation: mocks.dbDeletePurchaseSimulation,
   seedDemoData: vi.fn(),
   exportAllData: vi.fn(),
   getBackupImportPreview: mocks.getBackupImportPreview,
   importAllData: vi.fn(),
   importDataByEventIds: mocks.importDataByEventIds,
   resetAllData: vi.fn(),
+  createEventAuditLog: vi.fn(),
+  createAutoBackupSnapshot: vi.fn(),
+  listAutoBackupSnapshots: vi.fn(),
+  restoreAutoBackupSnapshot: vi.fn(),
+  pruneAutoBackupSnapshots: vi.fn(),
   db: {},
 }));
 
@@ -105,5 +114,62 @@ describe("useEventsStore itinerary actions", () => {
     expect(mocks.importDataByEventIds).toHaveBeenCalledWith('{"version":1}', ["event-1", "event-2"]);
     expect(loadAllSpy).toHaveBeenCalled();
     loadAllSpy.mockRestore();
+  });
+
+  it("persiste cenário de compra antecipada e sincroniza estado", async () => {
+    const simulation: PurchaseSimulation = {
+      id: "sim-1",
+      eventId: "event-1",
+      category: "ingresso",
+      provider: "Sympla",
+      currentPrice: 320,
+      targetPrice: 280,
+      targetDate: "2026-09-01",
+      volatility: "media",
+      availabilityRisk: "medio",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    mocks.dbUpsertPurchaseSimulation.mockResolvedValue(simulation);
+
+    await useEventsStore.getState().upsertPurchaseSimulation({
+      eventId: simulation.eventId,
+      category: simulation.category,
+      provider: simulation.provider,
+      currentPrice: simulation.currentPrice,
+      targetPrice: simulation.targetPrice,
+      targetDate: simulation.targetDate,
+      volatility: simulation.volatility,
+      availabilityRisk: simulation.availabilityRisk,
+    });
+
+    expect(mocks.dbUpsertPurchaseSimulation).toHaveBeenCalled();
+    expect(useEventsStore.getState().getPurchaseSimulationsByEventId("event-1")).toEqual([simulation]);
+  });
+
+  it("remove cenário de compra antecipada após exclusão persistida", async () => {
+    useEventsStore.setState({
+      purchaseSimulations: [
+        {
+          id: "sim-1",
+          eventId: "event-1",
+          category: "ingresso",
+          provider: "Sympla",
+          currentPrice: 320,
+          targetPrice: 280,
+          targetDate: "2026-09-01",
+          volatility: "media",
+          availabilityRisk: "medio",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+    });
+    mocks.dbDeletePurchaseSimulation.mockResolvedValue(undefined);
+
+    await useEventsStore.getState().deletePurchaseSimulation("sim-1");
+
+    expect(mocks.dbDeletePurchaseSimulation).toHaveBeenCalledWith("sim-1");
+    expect(useEventsStore.getState().getPurchaseSimulationsByEventId("event-1")).toEqual([]);
   });
 });

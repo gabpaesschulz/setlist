@@ -37,7 +37,31 @@ npm start
 ```bash
 npm test
 npm run test:coverage
+npm run test:quick
 ```
+
+## Qualidade de código (pre-commit)
+
+```bash
+npm run prepare
+```
+
+- O hook pre-commit executa lint com autofix via lint-staged
+- Em seguida roda uma suíte rápida de testes críticos
+
+## Simulador de compra antecipada
+
+- Abra um evento e acesse a aba **Gastos**
+- Configure **data alvo** e **limites por categoria** no simulador
+- Salve o cenário para receber projeções **otimista**, **provável** e **conservadora**
+- Use os alertas de risco financeiro/logístico e a recomendação por categoria para decidir compra
+
+## Histórico operacional por evento
+
+- Abra um evento e acesse a aba **Mais**
+- Use o bloco **Histórico operacional** para rastrear alterações no planejamento
+- Aplique filtros por **ação**, **entidade** e **período** (7, 30 ou 90 dias)
+- O histórico acompanha os backups e restaurações do app
 
 ## Instalar no iPhone
 
@@ -118,17 +142,17 @@ src/
   - **Complexidade estimada:** alta.
   - **Valor de negócio:** entrega sincronização multi-dispositivo preservando o posicionamento “local-first/privacidade”, reduz dependência de provedores (iCloud/Drive) e abre caminho para colaboração limitada no futuro.
 
-- [ ] Guardrails de orçamento por evento com alertas preditivos
-  - **Descrição detalhada:** criar um módulo que projeta gasto final por evento com base nas despesas já lançadas e custo médio por categoria, exibindo alertas quando o orçamento planejado estiver em risco.
+- [x] Guardrails de orçamento por evento com alertas preditivos
+  - **Descrição detalhada:** cada evento agora aceita orçamento total e orçamento por categoria no formulário. A aba de gastos mostra guardrail com análise de risco, projeção de gasto até a data do evento e categorias de maior pressão para apoiar ajuste do planejamento.
   - **Critérios de aceitação:**
     - usuário define orçamento total e por categoria no evento;
-    - sistema calcula projeção de gasto final em tempo real conforme novas despesas;
-    - app exibe alertas visuais quando projeção ultrapassa limites definidos;
-    - insights mostram causas principais do desvio e recomendam ajuste por categoria.
+    - sistema calcula projeção de gasto final conforme ritmo de despesas já lançadas;
+    - app exibe alertas visuais com níveis de risco (sob controle, atenção, risco alto, estouro);
+    - seção de gastos destaca causas principais por categoria para orientar ajustes.
   - **Complexidade estimada:** média.
   - **Valor de negócio:** aumenta previsibilidade financeira, incentiva uso recorrente da área de gastos e reforça o valor prático do app no planejamento completo do show/viagem.
 
-- [ ] Linha do tempo operacional com histórico de alterações por evento
+- [x] Linha do tempo operacional com histórico de alterações por evento
   - **Descrição detalhada:** adicionar uma timeline de mudanças (criação, edição, conclusão e restauração) para cada evento, com diff resumido por campo, permitindo rastrear decisões e recuperar contexto rapidamente.
   - **Critérios de aceitação:**
     - cada alteração relevante em evento, ticket, viagem, hospedagem, checklist, roteiro e gastos gera um registro temporal;
@@ -137,3 +161,23 @@ src/
     - histórico pode ser exportado junto ao backup sem quebrar compatibilidade com versões anteriores.
   - **Complexidade estimada:** alta.
   - **Valor de negócio:** melhora governança pessoal do planejamento, reduz retrabalho após mudanças frequentes e aumenta confiança em fluxos de restauração e sincronização futura.
+
+- [x] Simulador de compra antecipada com cenários de preço
+  - **Descrição detalhada:** incluir um simulador que compara comprar agora vs. esperar por promoções em ingresso, viagem e hospedagem, usando histórico de variação de preço por fornecedor para estimar risco de alta e economia potencial.
+  - **Critérios de aceitação:**
+    - usuário cria cenários de compra por evento com data alvo, fornecedor e limite por categoria;
+    - sistema apresenta três cenários (conservador, provável e otimista) com recomendação;
+    - app sinaliza quando esperar compromete meta financeira ou disponibilidade logística;
+    - cenários são persistidos localmente e exportados/importados com o backup.
+  - **Complexidade estimada:** alta (entregue).
+  - **Valor de negócio:** melhora decisões de compra, reduz custo total e aumenta retenção no fluxo de gastos.
+
+- [ ] Motor de planejamento anual com teto mensal e metas por cidade
+  - **Descrição detalhada:** criar um módulo de planejamento financeiro anual que distribui orçamento global por mês/cidade, compara previsão versus realizado por eventos futuros e sugere realocação entre meses quando houver risco de extrapolação.
+  - **Critérios de aceitação:**
+    - usuário define orçamento anual e teto mensal por cidade ou global;
+    - sistema projeta gasto futuro combinando eventos agendados, custos fixos e média histórica;
+    - app alerta conflitos entre metas mensais e eventos planejados antes da compra;
+    - usuário recebe sugestões acionáveis de realocação (adiar compra, reduzir categoria crítica ou mover meta entre meses).
+  - **Complexidade estimada:** média/alta.
+  - **Valor de negócio:** amplia o app de controle pontual para planejamento estratégico do ano, elevando retenção, previsibilidade e confiança em decisões de compra de ingressos/viagens.

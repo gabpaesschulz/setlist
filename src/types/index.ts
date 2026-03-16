@@ -22,6 +22,8 @@ export type ExpenseCategory =
   | 'extras'
   | 'outro'
 
+export type PurchaseSimulationCategory = 'ingresso' | 'transporte' | 'hospedagem'
+
 export type PurchaseType = 'inteira' | 'meia' | 'social' | 'cortesia' | 'outro'
 
 export type ReadinessLevel = 'em_aberto' | 'organizando' | 'quase_pronto' | 'pronto'
@@ -42,11 +44,17 @@ export interface Event {
   venue: string
   budgetTotal?: number
   budgetByCategory?: Partial<Record<ExpenseCategory, number>>
+  purchaseSimulator?: PurchaseSimulationConfig
   notes?: string
   coverImage?: string
   createdAt: string
   updatedAt: string
   completedAt?: string
+}
+
+export interface PurchaseSimulationConfig {
+  targetDate: string
+  limitByCategory?: Partial<Record<PurchaseSimulationCategory, number>>
 }
 
 export interface Ticket {
@@ -104,6 +112,26 @@ export interface Expense {
   createdAt: string
 }
 
+export type EarlyPurchaseCategory = 'ingresso' | 'transporte' | 'hospedagem'
+
+export type PriceVolatility = 'baixa' | 'media' | 'alta'
+
+export type AvailabilityRisk = 'baixo' | 'medio' | 'alto'
+
+export interface PurchaseSimulation {
+  id: string
+  eventId: string
+  category: EarlyPurchaseCategory
+  provider: string
+  currentPrice: number
+  targetPrice: number
+  targetDate: string
+  volatility: PriceVolatility
+  availabilityRisk: AvailabilityRisk
+  createdAt: string
+  updatedAt: string
+}
+
 export interface ItineraryItem {
   id: string
   eventId: string
@@ -130,6 +158,44 @@ export interface EventReflection {
   notes?: string
   favoriteMoment?: string
   worthIt: boolean
+  createdAt: string
+}
+
+export type AuditEntityType =
+  | 'event'
+  | 'ticket'
+  | 'travel'
+  | 'lodging'
+  | 'expense'
+  | 'itinerary'
+  | 'checklist'
+  | 'reflection'
+  | 'system'
+
+export type AuditAction =
+  | 'create'
+  | 'update'
+  | 'delete'
+  | 'complete'
+  | 'duplicate'
+  | 'restore'
+  | 'import'
+  | 'reset'
+
+export interface AuditFieldChange {
+  field: string
+  before?: string
+  after?: string
+}
+
+export interface EventAuditLog {
+  id: string
+  eventId: string
+  entityType: AuditEntityType
+  action: AuditAction
+  source: string
+  summary: string
+  changes: AuditFieldChange[]
   createdAt: string
 }
 
