@@ -5,7 +5,10 @@ import type { Event, Expense } from "@/types";
 
 const mocks = vi.hoisted(() => ({
   deleteExpense: vi.fn(),
+  updateEvent: vi.fn(),
   toast: vi.fn(),
+  upsertPurchaseSimulation: vi.fn(),
+  deletePurchaseSimulation: vi.fn(),
 }));
 
 vi.mock("@/stores/events-store", () => ({
@@ -13,6 +16,11 @@ vi.mock("@/stores/events-store", () => ({
     selector({
       deleteExpense: mocks.deleteExpense,
       addExpense: vi.fn(),
+      updateEvent: mocks.updateEvent,
+      purchaseSimulations: [],
+      upsertPurchaseSimulation: mocks.upsertPurchaseSimulation,
+      deletePurchaseSimulation: mocks.deletePurchaseSimulation,
+      getPurchaseSimulationsByEventId: () => [],
     }),
 }));
 
@@ -66,12 +74,14 @@ describe("ExpensesSection integração", () => {
         expenses={expenses}
         ticket={{ id: "ticket-1", eventId: "event-1", sector: "", ticketType: "", purchaseType: "inteira", provider: "", price: 250, fee: 20, purchased: true }}
         travel={{ id: "travel-1", eventId: "event-1", transportType: "onibus", booked: true, departureLocation: "", arrivalLocation: "", price: 90 }}
+        lodging={{ id: "lodging-1", eventId: "event-1", required: true, confirmed: false, price: 180 }}
       />,
     );
 
     expect(screen.getByText("Guardrail de orçamento")).toBeInTheDocument();
-    expect(screen.getByText("Risco alto de estouro")).toBeInTheDocument();
+    expect(screen.getByText("Orçamento estourado")).toBeInTheDocument();
     expect(screen.getByText(/Maior pressão: ingresso e transporte\./i)).toBeInTheDocument();
+    expect(screen.getByText("Simulador de compra antecipada")).toBeInTheDocument();
   });
 
   it("não exibe guardrail quando evento não possui orçamento", () => {

@@ -7,9 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:quick": "vitest run src/lib/domain/expenses.test.ts src/components/events/expenses-section.integration.test.tsx src/components/events/early-purchase-simulator.integration.test.tsx src/stores/events-store.itinerary.test.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -57,9 +60,18 @@
     "@vitest/coverage-v8": "^4.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "fake-indexeddb": "^6.2.5",
+    "husky": "^9.1.7",
     "jsdom": "^27.2.0",
+    "lint-staged": "^16.4.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.0.7"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "vitest related --run"
+    ]
   }
 }

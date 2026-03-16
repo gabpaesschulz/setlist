@@ -22,6 +22,7 @@ import { ExpensesSection } from '@/components/events/expenses-section'
 import { ItinerarySection } from '@/components/events/itinerary-section'
 import { ChecklistSection } from '@/components/events/checklist-section'
 import { ReflectionSection } from '@/components/events/reflection-section'
+import { OperationalTimelineSection } from '@/components/events/operational-timeline-section'
 import { ShareEventDialog } from '@/components/events/share-event-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Button } from '@/components/ui/button'
@@ -54,6 +55,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const deleteEvent = useEventsStore((s) => s.deleteEvent)
   const completeEvent = useEventsStore((s) => s.completeEvent)
   const duplicateEvent = useEventsStore((s) => s.duplicateEvent)
+  const auditLogs = useEventsStore((s) => s.getAuditLogsByEventId(id))
 
   const event = events.find((e) => e.id === id)
   const ticket = tickets.find((t) => t.eventId === id)
@@ -264,7 +266,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           </TabsContent>
 
           <TabsContent value="gastos" className="mt-0 space-y-4">
-            <ExpensesSection eventId={id} event={event} expenses={eventExpenses} ticket={ticket} travel={travel} />
+            <ExpensesSection
+              eventId={id}
+              event={event}
+              expenses={eventExpenses}
+              ticket={ticket}
+              travel={travel}
+              lodging={lodging}
+            />
           </TabsContent>
 
           <TabsContent value="mais" className="mt-0 space-y-4">
@@ -307,6 +316,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 <ReflectionSection eventId={id} event={event} reflection={reflection} />
               </div>
             )}
+
+            <OperationalTimelineSection auditLogs={auditLogs} />
 
             {/* Ações */}
             <div className="pt-4 border-t space-y-2">

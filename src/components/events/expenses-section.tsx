@@ -11,6 +11,7 @@ import { EXPENSE_CATEGORIES } from "@/lib/constants";
 import { formatCurrency, formatDate } from "@/lib/formatters";
 import { useEventsStore } from "@/stores/events-store";
 import { getEventBudgetGuardrails } from "@/lib/domain/expenses";
+import { EarlyPurchaseSimulator } from "@/components/events/early-purchase-simulator";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ interface ExpensesSectionProps {
   expenses: Expense[];
   ticket?: TicketType;
   travel?: Travel;
+  lodging?: { price?: number };
 }
 
 // ─── Category color map ───────────────────────────────────────────────────────
@@ -165,15 +167,16 @@ function AddExpenseForm({ eventId, onClose }: { eventId: string; onClose: () => 
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function ExpensesSection({ eventId, event, expenses, ticket, travel }: ExpensesSectionProps) {
+export function ExpensesSection({ eventId, event, expenses, ticket, travel, lodging }: ExpensesSectionProps) {
   const [showForm, setShowForm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const deleteExpense = useEventsStore((s) => s.deleteExpense);
 
   const ticketCost = (ticket?.price ?? 0) + (ticket?.fee ?? 0);
   const travelCost = travel?.price ?? 0;
+  const lodgingCost = lodging?.price ?? 0;
   const expensesTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const total = expensesTotal + ticketCost + travelCost;
+  const total = expensesTotal + ticketCost + travelCost + lodgingCost;
 
   // Group by category
   const grouped = expenses.reduce<Record<ExpenseCategory, Expense[]>>(
@@ -197,7 +200,7 @@ export function ExpensesSection({ eventId, event, expenses, ticket, travel }: Ex
   const spentByCategory: Record<ExpenseCategory, number> = {
     ingresso: ticketCost,
     transporte: travelCost,
-    hospedagem: 0,
+    hospedagem: lodgingCost,
     alimentacao: 0,
     merch: 0,
     extras: 0,
@@ -341,11 +344,22 @@ export function ExpensesSection({ eventId, event, expenses, ticket, travel }: Ex
         </div>
       )}
 
+      {event && (
+        <EarlyPurchaseSimulator
+          eventId={eventId}
+          event={event}
+          ticket={ticket}
+          travel={travel}
+          lodging={lodging}
+          totalSpent={total}
+        />
+      )}
+
       {/* Add form */}
       {showForm && <AddExpenseForm eventId={eventId} onClose={() => setShowForm(false)} />}
 
       {/* Fixed costs (Ticket & Travel) */}
-      {(ticketCost > 0 || travelCost > 0) && (
+      {(ticketCost > 0 || travelCost > 0 || lodgingCost > 0) && (
         <div className="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
             <div className="flex items-center gap-2">
@@ -354,7 +368,9 @@ export function ExpensesSection({ eventId, event, expenses, ticket, travel }: Ex
               </div>
               <span className="text-xs font-semibold text-foreground/80">Custos Fixos</span>
             </div>
-            <span className="text-sm font-bold text-foreground">{formatCurrency(ticketCost + travelCost)}</span>
+            <span className="text-sm font-bold text-foreground">
+              {formatCurrency(ticketCost + travelCost + lodgingCost)}
+            </span>
           </div>
 
           <div className="divide-y divide-border/40">
@@ -378,6 +394,17 @@ export function ExpensesSection({ eventId, event, expenses, ticket, travel }: Ex
                   <span className="text-sm font-semibold text-foreground">Viagem</span>
                 </div>
                 <span className="text-sm font-bold text-foreground tabular-nums">{formatCurrency(travelCost)}</span>
+              </div>
+            )}
+            {lodgingCost > 0 && (
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600">
+                    <span className="text-xs">🏨</span>
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">Hospedagem</span>
+                </div>
+                <span className="text-sm font-bold text-foreground tabular-nums">{formatCurrency(lodgingCost)}</span>
               </div>
             )}
           </div>

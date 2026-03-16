@@ -66,6 +66,139 @@ export interface EventBudgetGuardrails {
   topPressureCategories: ExpenseCategory[]
 }
 
+export type EarlyPurchaseScenarioLevel = 'conservador' | 'provavel' | 'otimista'
+
+export type EarlyPurchaseRecommendation = 'comprar_agora' | 'esperar' | 'monitorar'
+
+export interface EarlyPurchaseCategoryInput {
+  category: 'ingresso' | 'transporte' | 'hospedagem'
+  currentPrice: number
+  targetPrice: number
+  priceCap: number
+  volatility: number
+  inventoryRisk: number
+}
+
+export interface EarlyPurchaseSimulationParams {
+  categories: EarlyPurchaseCategoryInput[]
+  daysUntilTarget: number
+  budgetTotal?: number
+  currentSpent?: number
+}
+
+export interface EarlyPurchaseCategorySimulation {
+  category: EarlyPurchaseCategoryInput['category']
+  currentPrice: number
+  priceCap: number
+  projected: Record<EarlyPurchaseScenarioLevel, number>
+  recommendation: EarlyPurchaseRecommendation
+  shouldAlert: boolean
+}
+
+export interface EarlyPurchaseSimulationResult {
+  totals: Record<EarlyPurchaseScenarioLevel, number>
+  categories: EarlyPurchaseCategorySimulation[]
+  recommendation: EarlyPurchaseRecommendation
+  budgetRisk: 'ok' | 'warning' | 'critical'
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
+
+function roundCurrency(value: number): number {
+  return Math.round(value * 100) / 100
+}
+
+/**
+ * Simula cenários de compra antecipada para ingresso, transporte e hospedagem.
+ */
+export function simulateEarlyPurchaseScenarios(
+  params: EarlyPurchaseSimulationParams,
+): EarlyPurchaseSimulationResult {
+  const daysUntilTarget = clamp(params.daysUntilTarget, 0, 365)
+  const timePressure = clamp(daysUntilTarget / 120, 0, 1.5)
+
+  const categories: EarlyPurchaseCategorySimulation[] = params.categories
+    .filter(
+      (item) =>
+        item.currentPrice > 0 &&
+        item.targetPrice > 0 &&
+        item.priceCap > 0 &&
+        Number.isFinite(item.currentPrice) &&
+        Number.isFinite(item.targetPrice) &&
+        Number.isFinite(item.priceCap),
+    )
+    .map((item) => {
+      const volatility = clamp(item.volatility, 0, 1)
+      const inventoryRisk = clamp(item.inventoryRisk, 0, 1)
+      const riskPressure = clamp(
+        (volatility * 0.6 + inventoryRisk * 0.4) * (0.5 + timePressure),
+        0,
+        1.8,
+      )
+
+      const conservative = roundCurrency(item.currentPrice * (1 + riskPressure * 0.35))
+      const probable = roundCurrency(
+        item.targetPrice +
+          (item.currentPrice - item.targetPrice) * 0.35 +
+          item.currentPrice * riskPressure * 0.12,
+      )
+      const optimistic = roundCurrency(
+        Math.max(item.targetPrice * (1 - volatility * 0.08), item.targetPrice * 0.6),
+      )
+
+      const shouldBuyNow =
+        conservative > item.priceCap || conservative > item.currentPrice * 1.2 || probable > item.priceCap
+      const shouldWait = probable <= item.currentPrice * 0.95 && conservative <= item.priceCap
+      const recommendation: EarlyPurchaseRecommendation = shouldBuyNow
+        ? 'comprar_agora'
+        : shouldWait
+          ? 'esperar'
+          : 'monitorar'
+
+      return {
+        category: item.category,
+        currentPrice: roundCurrency(item.currentPrice),
+        priceCap: roundCurrency(item.priceCap),
+        projected: {
+          conservador: conservative,
+          provavel: roundCurrency(probable),
+          otimista: roundCurrency(optimistic),
+        },
+        recommendation,
+        shouldAlert: shouldBuyNow,
+      }
+    })
+
+  const totals = categories.reduce<Record<EarlyPurchaseScenarioLevel, number>>(
+    (acc, item) => ({
+      conservador: roundCurrency(acc.conservador + item.projected.conservador),
+      provavel: roundCurrency(acc.provavel + item.projected.provavel),
+      otimista: roundCurrency(acc.otimista + item.projected.otimista),
+    }),
+    { conservador: 0, provavel: 0, otimista: 0 },
+  )
+
+  const categoriesToBuyNow = categories.filter((item) => item.recommendation === 'comprar_agora').length
+  const categoriesToWait = categories.filter((item) => item.recommendation === 'esperar').length
+  const recommendation: EarlyPurchaseRecommendation =
+    categoriesToBuyNow > 0 ? 'comprar_agora' : categoriesToWait === categories.length ? 'esperar' : 'monitorar'
+
+  const projectedSpent = (params.currentSpent ?? 0) + totals.provavel
+  const budgetRatio =
+    params.budgetTotal && params.budgetTotal > 0 ? projectedSpent / params.budgetTotal : 0
+  const budgetRisk: EarlyPurchaseSimulationResult['budgetRisk'] =
+    budgetRatio >= 1 ? 'critical' : budgetRatio >= 0.85 ? 'warning' : 'ok'
+
+  return {
+    totals,
+    categories,
+    recommendation,
+    budgetRisk,
+  }
+}
+
 export function getEventBudgetGuardrails(params: {
   budgetTotal?: number
   budgetByCategory?: Partial<Record<ExpenseCategory, number>>
