@@ -75,6 +75,7 @@ export interface Travel {
   locatorCode?: string
   notes?: string
   bookingUrl?: string
+  price?: number
 }
 
 export interface Lodging {

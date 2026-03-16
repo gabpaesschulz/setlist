@@ -1,11 +1,80 @@
 import { getYear, getMonth, parseISO, isValid } from 'date-fns'
-import type { Expense, Event, ExpenseCategory } from '@/types'
+import type { Expense, Event, ExpenseCategory, Ticket, Travel, Lodging } from '@/types'
 
 // ─── Internal Helpers ─────────────────────────────────────────────────────────
 
 function parseExpenseDate(expense: Expense): Date | null {
   const date = parseISO(expense.expenseDate)
   return isValid(date) ? date : null
+}
+
+/**
+ * Merges manual expenses with automatic expenses derived from Tickets, Travel, and Lodging.
+ * This provides a unified view for charts and totals.
+ */
+export function getAllProjectedExpenses(
+  expenses: Expense[],
+  tickets: Ticket[],
+  travels: Travel[],
+  lodgings: Lodging[],
+  events: Event[],
+): Expense[] {
+  const all = [...expenses]
+  const eventMap = new Map(events.map((e) => [e.id, e]))
+
+  // 1. Tickets -> 'ingresso'
+  for (const t of tickets) {
+    const total = (t.price || 0) + (t.fee || 0)
+    if (total > 0) {
+      const event = eventMap.get(t.eventId)
+      all.push({
+        id: `ticket-${t.id}`,
+        eventId: t.eventId,
+        category: 'ingresso',
+        amount: total,
+        description: 'Ingresso (Calculado)',
+        expenseDate: event?.date || new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      })
+    }
+  }
+
+  // 2. Travel -> 'transporte'
+  for (const t of travels) {
+    if ((t.price || 0) > 0) {
+      const event = eventMap.get(t.eventId)
+      // Use outbound date or event date as fallback
+      const date = t.outboundDateTime ? t.outboundDateTime.split('T')[0] : event?.date
+      all.push({
+        id: `travel-${t.id}`,
+        eventId: t.eventId,
+        category: 'transporte',
+        amount: t.price!,
+        description: 'Viagem (Calculado)',
+        expenseDate: date || new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      })
+    }
+  }
+
+  // 3. Lodging -> 'hospedagem'
+  for (const l of lodgings) {
+    if ((l.price || 0) > 0) {
+      const event = eventMap.get(l.eventId)
+      const date = l.checkIn ? l.checkIn.split('T')[0] : event?.date
+      all.push({
+        id: `lodging-${l.id}`,
+        eventId: l.eventId,
+        category: 'hospedagem',
+        amount: l.price!,
+        description: 'Hospedagem (Calculado)',
+        expenseDate: date || new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      })
+    }
+  }
+
+  return all
 }
 
 // ─── Per-Event Aggregations ───────────────────────────────────────────────────

@@ -10,6 +10,7 @@ import {
   getExpensesByCategory,
   getExpensesByMonth,
   getTopExpenseEvents,
+  getAllProjectedExpenses,
 } from '@/lib/domain/expenses'
 import { formatCurrency } from '@/lib/formatters'
 import { EXPENSE_CATEGORIES } from '@/lib/constants'
@@ -97,7 +98,7 @@ function EmptyExpenses() {
 // ─── Expenses Page ────────────────────────────────────────────────────────────
 
 export default function ExpensesPage() {
-  const { events, expenses, loading, loadAll } = useEventsStore()
+  const { events, expenses, tickets, travels, lodgings, loading, loadAll } = useEventsStore()
 
   const currentYear = new Date().getFullYear()
 
@@ -106,14 +107,19 @@ export default function ExpensesPage() {
   }, [loadAll])
 
   // ── Derived data ────────────────────────────────────────────────────────────
+  const allExpenses = useMemo(
+    () => getAllProjectedExpenses(expenses, tickets, travels, lodgings, events),
+    [expenses, tickets, travels, lodgings, events],
+  )
+
   const yearExpenses = useMemo(
-    () => expenses.filter((e) => e.expenseDate.startsWith(String(currentYear))),
-    [expenses, currentYear],
+    () => allExpenses.filter((e) => e.expenseDate.startsWith(String(currentYear))),
+    [allExpenses, currentYear],
   )
 
   const totalForYear = useMemo(
-    () => getTotalExpensesForYear(expenses, currentYear),
-    [expenses, currentYear],
+    () => getTotalExpensesForYear(allExpenses, currentYear),
+    [allExpenses, currentYear],
   )
 
   const byCategory = useMemo(
@@ -122,13 +128,13 @@ export default function ExpensesPage() {
   )
 
   const byMonth = useMemo(
-    () => getExpensesByMonth(expenses, currentYear),
-    [expenses, currentYear],
+    () => getExpensesByMonth(allExpenses, currentYear),
+    [allExpenses, currentYear],
   )
 
   const topEvents = useMemo(
-    () => getTopExpenseEvents(expenses, events).filter((e) => e.total > 0).slice(0, 10),
-    [expenses, events],
+    () => getTopExpenseEvents(allExpenses, events).filter((e) => e.total > 0).slice(0, 10),
+    [allExpenses, events],
   )
 
   const maxEventTotal = useMemo(
@@ -147,7 +153,7 @@ export default function ExpensesPage() {
   }
 
   // ── Empty state ─────────────────────────────────────────────────────────────
-  if (expenses.length === 0) {
+  if (allExpenses.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <div className="safe-top" />
@@ -185,7 +191,7 @@ export default function ExpensesPage() {
               {formatCurrency(totalForYear)}
             </p>
             <p className="mt-2 text-xs text-primary-foreground/60">
-              {expenses.length} {expenses.length === 1 ? 'gasto registrado' : 'gastos registrados'}
+              {allExpenses.length} {allExpenses.length === 1 ? 'gasto registrado' : 'gastos registrados'}
             </p>
           </div>
         </motion.div>

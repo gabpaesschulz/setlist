@@ -1,37 +1,31 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Plus, Trash2, X, TrendingUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { Expense, ExpenseCategory } from '@/types';
-import { EXPENSE_CATEGORIES } from '@/lib/constants';
-import { formatCurrency, formatDate } from '@/lib/formatters';
-import { useEventsStore } from '@/stores/events-store';
-import { toast } from '@/components/ui/use-toast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Plus, Trash2, X, TrendingUp, Ticket, Bus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { Expense, ExpenseCategory, Ticket as TicketType, Travel } from "@/types";
+import { EXPENSE_CATEGORIES } from "@/lib/constants";
+import { formatCurrency, formatDate } from "@/lib/formatters";
+import { useEventsStore } from "@/stores/events-store";
+import { toast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const expenseFormSchema = z.object({
-  category: z.enum(['ingresso', 'transporte', 'hospedagem', 'alimentacao', 'merch', 'extras', 'outro']),
-  amount: z.coerce.number().min(0.01, 'Valor deve ser maior que zero'),
-  description: z.string().min(1, 'Descrição é obrigatória'),
+  category: z.enum(["ingresso", "transporte", "hospedagem", "alimentacao", "merch", "extras", "outro"]),
+  amount: z.coerce.number().min(0.01, "Valor deve ser maior que zero"),
+  description: z.string().min(1, "Descrição é obrigatória"),
   expenseDate: z
     .string()
-    .min(1, 'Data é obrigatória')
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida'),
+    .min(1, "Data é obrigatória")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida"),
 });
 
 type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
@@ -41,32 +35,28 @@ type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 interface ExpensesSectionProps {
   eventId: string;
   expenses: Expense[];
+  ticket?: TicketType;
+  travel?: Travel;
 }
 
 // ─── Category color map ───────────────────────────────────────────────────────
 
 const categoryBgColor: Record<ExpenseCategory, string> = {
-  ingresso: 'bg-purple-500/10',
-  transporte: 'bg-blue-500/10',
-  hospedagem: 'bg-indigo-500/10',
-  alimentacao: 'bg-orange-500/10',
-  merch: 'bg-pink-500/10',
-  extras: 'bg-teal-500/10',
-  outro: 'bg-gray-500/10',
+  ingresso: "bg-purple-500/10",
+  transporte: "bg-blue-500/10",
+  hospedagem: "bg-indigo-500/10",
+  alimentacao: "bg-orange-500/10",
+  merch: "bg-pink-500/10",
+  extras: "bg-teal-500/10",
+  outro: "bg-gray-500/10",
 };
 
 // ─── Add Expense Form ─────────────────────────────────────────────────────────
 
-function AddExpenseForm({
-  eventId,
-  onClose,
-}: {
-  eventId: string;
-  onClose: () => void;
-}) {
+function AddExpenseForm({ eventId, onClose }: { eventId: string; onClose: () => void }) {
   const addExpense = useEventsStore((s) => s.addExpense);
   const [loading, setLoading] = useState(false);
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
 
   const {
     register,
@@ -76,9 +66,9 @@ function AddExpenseForm({
   } = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema),
     defaultValues: {
-      category: 'outro',
+      category: "outro",
       amount: 0,
-      description: '',
+      description: "",
       expenseDate: today,
     },
   });
@@ -93,17 +83,20 @@ function AddExpenseForm({
         description: data.description,
         expenseDate: data.expenseDate,
       });
-      toast({ title: 'Gasto adicionado!' });
+      toast({ title: "Gasto adicionado!" });
       onClose();
     } catch {
-      toast({ title: 'Erro ao adicionar gasto', variant: 'destructive' });
+      toast({ title: "Erro ao adicionar gasto", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm space-y-3">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="rounded-2xl border border-border/50 bg-card p-4 shadow-sm space-y-3"
+    >
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-foreground">Novo gasto</h4>
         <button
@@ -118,10 +111,7 @@ function AddExpenseForm({
       {/* Category */}
       <div className="space-y-1.5">
         <Label className="text-xs">Categoria</Label>
-        <Select
-          defaultValue="outro"
-          onValueChange={(v) => setValue('category', v as ExpenseFormValues['category'])}
-        >
+        <Select defaultValue="outro" onValueChange={(v) => setValue("category", v as ExpenseFormValues["category"])}>
           <SelectTrigger className="h-9 text-sm">
             <SelectValue />
           </SelectTrigger>
@@ -140,7 +130,7 @@ function AddExpenseForm({
         <div className="space-y-1.5">
           <Label className="text-xs">Valor (R$) *</Label>
           <Input
-            {...register('amount', { valueAsNumber: true })}
+            {...register("amount", { valueAsNumber: true })}
             type="number"
             step="0.01"
             min="0.01"
@@ -153,19 +143,19 @@ function AddExpenseForm({
         {/* Date */}
         <div className="space-y-1.5">
           <Label className="text-xs">Data *</Label>
-          <Input {...register('expenseDate')} type="date" className="h-9 text-sm" />
+          <Input {...register("expenseDate")} type="date" className="h-9 text-sm" />
         </div>
       </div>
 
       {/* Description */}
       <div className="space-y-1.5">
         <Label className="text-xs">Descrição *</Label>
-        <Input {...register('description')} placeholder="Ex: Ingresso setor A" className="h-9 text-sm" />
+        <Input {...register("description")} placeholder="Ex: Ingresso setor A" className="h-9 text-sm" />
         {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
       </div>
 
       <Button type="submit" className="w-full rounded-xl h-9" disabled={loading}>
-        {loading ? 'Adicionando...' : 'Adicionar gasto'}
+        {loading ? "Adicionando..." : "Adicionar gasto"}
       </Button>
     </form>
   );
@@ -173,12 +163,15 @@ function AddExpenseForm({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function ExpensesSection({ eventId, expenses }: ExpensesSectionProps) {
+export function ExpensesSection({ eventId, expenses, ticket, travel }: ExpensesSectionProps) {
   const [showForm, setShowForm] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const deleteExpense = useEventsStore((s) => s.deleteExpense);
 
-  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const ticketCost = (ticket?.price ?? 0) + (ticket?.fee ?? 0);
+  const travelCost = travel?.price ?? 0;
+  const expensesTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const total = expensesTotal + ticketCost + travelCost;
 
   // Group by category
   const grouped = expenses.reduce<Record<ExpenseCategory, Expense[]>>(
@@ -191,19 +184,21 @@ export function ExpensesSection({ eventId, expenses }: ExpensesSectionProps) {
     {} as Record<ExpenseCategory, Expense[]>,
   );
 
-  const categoryTotals = Object.entries(grouped).map(([cat, items]) => ({
-    category: cat as ExpenseCategory,
-    total: items.reduce((sum, e) => sum + e.amount, 0),
-    count: items.length,
-  })).sort((a, b) => b.total - a.total);
+  const categoryTotals = Object.entries(grouped)
+    .map(([cat, items]) => ({
+      category: cat as ExpenseCategory,
+      total: items.reduce((sum, e) => sum + e.amount, 0),
+      count: items.length,
+    }))
+    .sort((a, b) => b.total - a.total);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
       await deleteExpense(id);
-      toast({ title: 'Gasto removido' });
+      toast({ title: "Gasto removido" });
     } catch {
-      toast({ title: 'Erro ao remover gasto', variant: 'destructive' });
+      toast({ title: "Erro ao remover gasto", variant: "destructive" });
     } finally {
       setDeletingId(null);
     }
@@ -212,13 +207,16 @@ export function ExpensesSection({ eventId, expenses }: ExpensesSectionProps) {
   return (
     <div className="space-y-3">
       {/* Total banner */}
-      {expenses.length > 0 && (
+      {(expenses.length > 0 || total > 0) && (
         <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-0.5">Total gasto</p>
               <p className="text-2xl font-black text-primary">{formatCurrency(total)}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{expenses.length} {expenses.length === 1 ? 'item' : 'itens'}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {expenses.length} {expenses.length === 1 ? "item manual" : "itens manuais"}
+                {ticketCost > 0 || travelCost > 0 ? " + custos fixos" : ""}
+              </p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
               <TrendingUp className="h-6 w-6 text-primary" />
@@ -246,8 +244,46 @@ export function ExpensesSection({ eventId, expenses }: ExpensesSectionProps) {
       )}
 
       {/* Add form */}
-      {showForm && (
-        <AddExpenseForm eventId={eventId} onClose={() => setShowForm(false)} />
+      {showForm && <AddExpenseForm eventId={eventId} onClose={() => setShowForm(false)} />}
+
+      {/* Fixed costs (Ticket & Travel) */}
+      {(ticketCost > 0 || travelCost > 0) && (
+        <div className="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+              <span className="text-xs font-semibold text-foreground/80">Custos Fixos</span>
+            </div>
+            <span className="text-sm font-bold text-foreground">{formatCurrency(ticketCost + travelCost)}</span>
+          </div>
+
+          <div className="divide-y divide-border/40">
+            {ticketCost > 0 && (
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600">
+                    <Ticket className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">Ingresso + Taxas</span>
+                </div>
+                <span className="text-sm font-bold text-foreground tabular-nums">{formatCurrency(ticketCost)}</span>
+              </div>
+            )}
+            {travelCost > 0 && (
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600">
+                    <Bus className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">Viagem</span>
+                </div>
+                <span className="text-sm font-bold text-foreground tabular-nums">{formatCurrency(travelCost)}</span>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Expense list grouped by category */}
@@ -256,14 +292,16 @@ export function ExpensesSection({ eventId, expenses }: ExpensesSectionProps) {
         const catTotal = items.reduce((sum, e) => sum + e.amount, 0);
 
         return (
-          <div
-            key={cat}
-            className="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden"
-          >
+          <div key={cat} className="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
             {/* Category header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
               <div className="flex items-center gap-2">
-                <div className={cn('flex h-7 w-7 items-center justify-center rounded-lg text-sm', categoryBgColor[cat as ExpenseCategory])}>
+                <div
+                  className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-lg text-sm",
+                    categoryBgColor[cat as ExpenseCategory],
+                  )}
+                >
                   {catMeta.icon}
                 </div>
                 <span className="text-xs font-semibold text-foreground/80">{catMeta.label}</span>
@@ -274,10 +312,7 @@ export function ExpensesSection({ eventId, expenses }: ExpensesSectionProps) {
             {/* Items */}
             <div className="divide-y divide-border/40">
               {items.map((expense) => (
-                <div
-                  key={expense.id}
-                  className="flex items-center gap-3 px-4 py-3"
-                >
+                <div key={expense.id} className="flex items-center gap-3 px-4 py-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{expense.description}</p>
                     <p className="text-xs text-muted-foreground">{formatDate(expense.expenseDate)}</p>
@@ -301,7 +336,7 @@ export function ExpensesSection({ eventId, expenses }: ExpensesSectionProps) {
       })}
 
       {/* Empty state */}
-      {expenses.length === 0 && !showForm && (
+      {expenses.length === 0 && !showForm && total === 0 && (
         <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border bg-card/50 px-4 py-8 text-center">
           <div className="text-3xl">💸</div>
           <p className="text-sm font-semibold text-foreground">Nenhum gasto registrado</p>
