@@ -23,6 +23,7 @@ import Link from 'next/link';
 import { eventFormSchema, type EventFormSchema } from '@/schemas';
 import { useEventsStore } from '@/stores/events-store';
 import { generateDefaultChecklist } from '@/lib/domain/checklist';
+import { parseTicketUrlImport } from '@/lib/domain/url-import';
 import { toast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -203,6 +204,8 @@ export function EventForm({ mode, initialData }: EventFormProps) {
 
   const [activeSection, setActiveSection] = useState<SectionId>('evento');
   const [saving, setSaving] = useState(false);
+  const [ticketImportUrl, setTicketImportUrl] = useState('');
+  const [importingTicketUrl, setImportingTicketUrl] = useState(false);
 
   const {
     register,
@@ -269,6 +272,48 @@ export function EventForm({ mode, initialData }: EventFormProps) {
       });
     } finally {
       event.target.value = '';
+    }
+  };
+
+  const handleImportTicketUrl = () => {
+    setImportingTicketUrl(true);
+    try {
+      const imported = parseTicketUrlImport(ticketImportUrl);
+      const appliedFields: string[] = [];
+      const importSetValueConfig = { shouldDirty: true, shouldTouch: true };
+
+      setValue('ticket.purchased', true, importSetValueConfig);
+      setValue('ticket.provider', imported.provider, importSetValueConfig);
+      setValue('ticket.ticketUrl', imported.normalizedUrl, importSetValueConfig);
+      appliedFields.push('plataforma do ingresso', 'link do ingresso');
+
+      if (!watchedValues.title.trim() && imported.hints.title) {
+        setValue('title', imported.hints.title, importSetValueConfig);
+        appliedFields.push('nome do evento');
+      }
+
+      if (!watchedValues.date.trim() && imported.hints.date) {
+        setValue('date', imported.hints.date, importSetValueConfig);
+        appliedFields.push('data do evento');
+      }
+
+      if (!watchedValues.city.trim() && imported.hints.city) {
+        setValue('city', imported.hints.city, importSetValueConfig);
+        appliedFields.push('cidade');
+      }
+
+      toast({
+        title: 'Importação concluída',
+        description: `Campos preenchidos: ${appliedFields.join(', ')}.`,
+      });
+    } catch (err) {
+      toast({
+        title: 'Não foi possível importar a URL',
+        description: getErrorMessage(err),
+        variant: 'destructive',
+      });
+    } finally {
+      setImportingTicketUrl(false);
     }
   };
 
@@ -657,6 +702,26 @@ export function EventForm({ mode, initialData }: EventFormProps) {
                   label="Ingresso comprado"
                   description="Marque quando o ingresso já estiver em mãos."
                 />
+
+                <div className="space-y-2 rounded-xl border border-border/60 bg-muted/20 p-3">
+                  <Label className="text-xs font-semibold">Importar por URL (Sympla/Eventim)</Label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      value={ticketImportUrl}
+                      onChange={(event) => setTicketImportUrl(event.target.value)}
+                      type="url"
+                      placeholder="Cole o link do Sympla ou Eventim"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleImportTicketUrl}
+                      disabled={!ticketImportUrl.trim() || importingTicketUrl}
+                      className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {importingTicketUrl ? 'Importando...' : 'Importar URL'}
+                    </button>
+                  </div>
+                </div>
 
                 <FormRow>
                   <FormField label="Setor / Lote">

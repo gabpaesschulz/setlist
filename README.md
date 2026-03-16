@@ -32,6 +32,13 @@ npm run build
 npm start
 ```
 
+## Testes
+
+```bash
+npm test
+npm run test:coverage
+```
+
 ## Instalar no iPhone
 
 1. Abra no **Safari** do iPhone
@@ -62,9 +69,21 @@ src/
 - [ ] Sync via iCloud/Google Drive
 - [ ] Notificações push (D-7, D-1)
 - [x] Upload de imagem de capa
-- [ ] Importação do Sympla/Eventim via URL
+- [x] Importação do Sympla/Eventim via URL
 - [ ] Widget de countdown iOS
 - [x] Compartilhar evento por link/QR code
 - [x] Detectar evento duplicado ao importar por link compartilhado
 - [x] Exportar evento para calendário (.ics)
-- [ ] Editar e remover item do roteiro com gesto de swipe
+- [x] Editar e remover item do roteiro com gesto de swipe
+
+### Oportunidade de melhoria sugerida
+
+- [ ] Centro de confiabilidade de dados (backup automático + restauração por evento)
+  - **Descrição detalhada:** criar um fluxo de backup local versionado (JSON compactado), com restauração seletiva por evento e validação de integridade antes da importação.
+  - **Critérios de aceitação:**
+    - usuário consegue gerar backup manual e automático sem perder dados existentes;
+    - usuário consegue restaurar apenas eventos selecionados sem sobrescrever o restante;
+    - sistema detecta arquivo inválido e mostra feedback claro, sem corromper o banco local;
+    - operação de backup/restauração mantém compatibilidade com estrutura de dados atual.
+  - **Complexidade estimada:** média/alta.
+  - **Valor de negócio:** reduz risco percebido de perda de dados, aumenta confiança no uso contínuo e melhora retenção de usuários que dependem do app como fonte principal de planejamento.
