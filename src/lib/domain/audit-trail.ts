@@ -5,8 +5,8 @@ export interface BuildAuditLogInput {
   entityType: AuditEntityType
   action: AuditAction
   source: string
-  before?: Record<string, unknown>
-  after?: Record<string, unknown>
+  before?: unknown
+  after?: unknown
   summary?: string
 }
 
@@ -22,18 +22,27 @@ function normalizeValue(value: unknown): string | undefined {
  * Gera uma lista de alterações por campo comparando snapshots antes/depois.
  */
 export function buildAuditFieldChanges(
-  before?: Record<string, unknown>,
-  after?: Record<string, unknown>,
+  before?: unknown,
+  after?: unknown,
 ): AuditFieldChange[] {
+  const beforeRecord =
+    before && typeof before === 'object'
+      ? (before as Record<string, unknown>)
+      : undefined
+  const afterRecord =
+    after && typeof after === 'object'
+      ? (after as Record<string, unknown>)
+      : undefined
+
   const keys = new Set<string>([
-    ...Object.keys(before ?? {}),
-    ...Object.keys(after ?? {}),
+    ...Object.keys(beforeRecord ?? {}),
+    ...Object.keys(afterRecord ?? {}),
   ])
 
   const changes: AuditFieldChange[] = []
   for (const field of keys) {
-    const previous = normalizeValue(before?.[field])
-    const next = normalizeValue(after?.[field])
+    const previous = normalizeValue(beforeRecord?.[field])
+    const next = normalizeValue(afterRecord?.[field])
     if (previous === next) continue
     changes.push({
       field,

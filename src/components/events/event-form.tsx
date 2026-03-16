@@ -688,11 +688,11 @@ export function EventForm({ mode, initialData }: EventFormProps) {
                 <div className="space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3">
                   <p className="text-xs font-semibold text-foreground">Orçamento por categoria (opcional)</p>
                   <div className="grid grid-cols-2 gap-3">
-                    {Object.entries(EXPENSE_CATEGORIES).map(([category, meta]) => (
+                    {(Object.keys(EXPENSE_CATEGORIES) as Array<keyof NonNullable<EventFormSchema['budgetByCategory']>>).map((category) => (
                       <FormField
                         key={category}
-                        label={`${meta.icon} ${meta.label}`}
-                        error={errors.budgetByCategory?.[category as keyof EventFormSchema['budgetByCategory']]?.message}
+                        label={`${EXPENSE_CATEGORIES[category].icon} ${EXPENSE_CATEGORIES[category].label}`}
+                        error={errors.budgetByCategory?.[category]?.message}
                       >
                         <Input
                           {...register(`budgetByCategory.${category}` as const, { valueAsNumber: true })}

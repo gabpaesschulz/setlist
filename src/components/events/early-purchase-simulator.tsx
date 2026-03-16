@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AlertTriangle, CalendarClock, CheckCircle2, Sparkles, Trash2 } from "lucide-react";
-import type { Event, Lodging, PurchaseSimulation, Ticket, Travel } from "@/types";
+import type { Event, PurchaseSimulation, Ticket, Travel } from "@/types";
 import { EXPENSE_CATEGORIES } from "@/lib/constants";
 import { formatCurrency } from "@/lib/formatters";
 import {
@@ -22,7 +22,7 @@ interface EarlyPurchaseSimulatorProps {
   event: Event;
   ticket?: Ticket;
   travel?: Travel;
-  lodging?: Lodging;
+  lodging?: { price?: number };
   totalSpent: number;
 }
 

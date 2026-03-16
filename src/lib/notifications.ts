@@ -91,7 +91,6 @@ async function showNotification(title: string, options: NotificationOptions): Pr
     // ignore and fallback
   }
   // Fallback (may show a page-level notification)
-  // @ts-expect-error new Notification exists if supported
   new Notification(title, options)
 }
 
