@@ -9,6 +9,15 @@ import {
 import { useEventsStore } from '@/stores/events-store'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { APP_VERSION } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
@@ -18,13 +27,21 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
   const [resetOpen, setResetOpen] = useState(false)
   const [demoOpen, setDemoOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [resetConfirmText, setResetConfirmText] = useState('')
+  const [importPayload, setImportPayload] = useState('')
+  const [importPreview, setImportPreview] = useState<
+    { id: string; title: string; artist: string; date: string; city: string; venue: string }[]
+  >([])
+  const [selectedImportIds, setSelectedImportIds] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const events = useEventsStore((s) => s.events)
   const expenses = useEventsStore((s) => s.expenses)
   const exportData = useEventsStore((s) => s.exportData)
+  const previewImportData = useEventsStore((s) => s.previewImportData)
   const importData = useEventsStore((s) => s.importData)
+  const importDataByEvents = useEventsStore((s) => s.importDataByEvents)
   const resetData = useEventsStore((s) => s.resetData)
   const seedDemo = useEventsStore((s) => s.seedDemo)
   const [notifEnabled, setNotifEnabled] = useState(false)
@@ -47,17 +64,61 @@ export default function SettingsPage() {
     }
   }
 
+  const clearImportSelection = () => {
+    setImportOpen(false)
+    setImportPayload('')
+    setImportPreview([])
+    setSelectedImportIds([])
+  }
+
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     try {
       const text = await file.text()
-      await importData(text)
-      toast({ title: 'Dados importados!', description: 'Todos os dados foram restaurados.' })
+      const preview = await previewImportData(text)
+      if (!preview.length) {
+        throw new Error('Backup sem eventos para restaurar.')
+      }
+      setImportPayload(text)
+      setImportPreview(preview)
+      setSelectedImportIds(preview.map((event) => event.id))
+      setImportOpen(true)
     } catch {
       toast({ title: 'Erro ao importar', description: 'Verifique se o arquivo é válido.', variant: 'destructive' })
     }
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleImportAll = async () => {
+    try {
+      await importData(importPayload)
+      toast({ title: 'Dados importados!', description: 'Todos os dados foram restaurados.' })
+      clearImportSelection()
+    } catch {
+      toast({ title: 'Erro ao importar', description: 'Verifique se o arquivo é válido.', variant: 'destructive' })
+    }
+  }
+
+  const handleImportSelected = async () => {
+    try {
+      await importDataByEvents(importPayload, selectedImportIds)
+      toast({
+        title: 'Dados importados!',
+        description: `${selectedImportIds.length} evento(s) restaurado(s) sem sobrescrever o restante.`,
+      })
+      clearImportSelection()
+    } catch {
+      toast({ title: 'Erro ao importar', description: 'Selecione ao menos um evento válido.', variant: 'destructive' })
+    }
+  }
+
+  const toggleImportEvent = (eventId: string) => {
+    setSelectedImportIds((current) =>
+      current.includes(eventId)
+        ? current.filter((id) => id !== eventId)
+        : [...current, eventId],
+    )
   }
 
   const handleReset = async () => {
@@ -296,6 +357,73 @@ export default function SettingsPage() {
         confirmLabel="Carregar demo"
         onConfirm={handleSeedDemo}
       />
+
+      <Dialog open={importOpen} onOpenChange={(open) => !open && clearImportSelection()}>
+        <DialogContent className="max-w-xl rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Restaurar backup</DialogTitle>
+            <DialogDescription>
+              Selecione os eventos que deseja restaurar ou aplique o backup completo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {selectedImportIds.length} de {importPreview.length} evento(s) selecionado(s)
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedImportIds(importPreview.map((event) => event.id))}
+                >
+                  Selecionar todos
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedImportIds([])}
+                >
+                  Limpar
+                </Button>
+              </div>
+            </div>
+            {importPreview.map((event) => (
+              <label
+                key={event.id}
+                htmlFor={`import-event-${event.id}`}
+                className="flex items-start gap-3 rounded-xl border p-3 cursor-pointer hover:bg-muted/40"
+              >
+                <Checkbox
+                  id={`import-event-${event.id}`}
+                  checked={selectedImportIds.includes(event.id)}
+                  onCheckedChange={() => toggleImportEvent(event.id)}
+                />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{event.title}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {event.artist} · {event.date} · {event.city}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">{event.venue}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={clearImportSelection}>
+              Cancelar
+            </Button>
+            <Button type="button" variant="outline" onClick={handleImportAll}>
+              Restaurar tudo
+            </Button>
+            <Button type="button" onClick={handleImportSelected} disabled={selectedImportIds.length === 0}>
+              Restaurar selecionados
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Reset confirm */}
       {resetOpen && (

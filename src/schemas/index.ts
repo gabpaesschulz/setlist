@@ -184,6 +184,21 @@ export const eventReflectionSchema = z.object({
 
 export type EventReflectionSchema = z.infer<typeof eventReflectionSchema>
 
+export const backupDataSchema = z.object({
+  version: z.literal(1),
+  exportedAt: z.string().min(1),
+  events: z.array(eventSchema).default([]),
+  tickets: z.array(ticketSchema).default([]),
+  travels: z.array(travelSchema).default([]),
+  lodgings: z.array(lodgingSchema).default([]),
+  expenses: z.array(expenseSchema).default([]),
+  itinerary: z.array(itineraryItemSchema).default([]),
+  checklist: z.array(checklistItemSchema).default([]),
+  reflections: z.array(eventReflectionSchema).default([]),
+})
+
+export type BackupDataSchema = z.infer<typeof backupDataSchema>
+
 // ─── Event Form Schema (creation / editing form) ──────────────────────────────
 // Combines core event fields with optional ticket, travel, and lodging fields.
 // IDs and timestamps are excluded from the form — they are generated at save time.

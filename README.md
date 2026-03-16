@@ -86,15 +86,25 @@ src/
 
 ### Oportunidade de melhoria sugerida
 
-- [ ] Centro de confiabilidade de dados (backup automático + restauração por evento)
-  - **Descrição detalhada:** criar um fluxo de backup local versionado (JSON compactado), com restauração seletiva por evento e validação de integridade antes da importação.
+- [x] Restauração seletiva por evento + validação de integridade no import
+  - **Descrição detalhada:** o fluxo de importação agora valida schema/versionamento do backup antes de gravar no banco local e permite restaurar somente eventos selecionados sem apagar os demais.
   - **Critérios de aceitação:**
-    - usuário consegue gerar backup manual e automático sem perder dados existentes;
-    - usuário consegue restaurar apenas eventos selecionados sem sobrescrever o restante;
-    - sistema detecta arquivo inválido e mostra feedback claro, sem corromper o banco local;
-    - operação de backup/restauração mantém compatibilidade com estrutura de dados atual.
+    - usuário consegue visualizar os eventos do backup antes de importar;
+    - usuário pode restaurar todo o backup ou apenas eventos selecionados;
+    - sistema rejeita arquivo inválido/incompatível sem corromper dados existentes;
+    - referência inválida entre entidades do backup é bloqueada com erro claro.
+  - **Complexidade estimada:** média.
+  - **Valor de negócio:** aumenta confiança no recurso de backup, reduz risco de perda acidental e melhora retenção em uso contínuo local-first.
+
+- [ ] Backup automático versionado com retenção local
+  - **Descrição detalhada:** complementar o centro de confiabilidade com snapshots automáticos (ex.: diário/semanal), política de retenção e restauração por ponto no tempo.
+  - **Critérios de aceitação:**
+    - app gera snapshots automáticos sem bloquear a experiência do usuário;
+    - usuário pode escolher um snapshot por data e restaurar com confirmação;
+    - retenção remove backups antigos conforme política configurada;
+    - snapshots mantêm compatibilidade com versão atual e migrações suportadas.
   - **Complexidade estimada:** média/alta.
-  - **Valor de negócio:** reduz risco percebido de perda de dados, aumenta confiança no uso contínuo e melhora retenção de usuários que dependem do app como fonte principal de planejamento.
+  - **Valor de negócio:** eleva proteção contra perda de dados por erro humano e cria percepção de produto mais confiável para planejamento anual.
 
 - [ ] Sincronização P2P local-first (WebRTC + CRDT)
   - **Descrição detalhada:** permitir sincronização opcional entre dois dispositivos do usuário usando pareamento por QR Code (WebRTC data channel) e resolução de conflitos via CRDT (ex.: Yjs). 100% E2E, sem servidor central, com troca apenas durante sessão ativa.
@@ -106,3 +116,13 @@ src/
     - funciona offline local (mesma rede) e via NAT traversal (STUN público).
   - **Complexidade estimada:** alta.
   - **Valor de negócio:** entrega sincronização multi-dispositivo preservando o posicionamento “local-first/privacidade”, reduz dependência de provedores (iCloud/Drive) e abre caminho para colaboração limitada no futuro.
+
+- [ ] Guardrails de orçamento por evento com alertas preditivos
+  - **Descrição detalhada:** criar um módulo que projeta gasto final por evento com base nas despesas já lançadas e custo médio por categoria, exibindo alertas quando o orçamento planejado estiver em risco.
+  - **Critérios de aceitação:**
+    - usuário define orçamento total e por categoria no evento;
+    - sistema calcula projeção de gasto final em tempo real conforme novas despesas;
+    - app exibe alertas visuais quando projeção ultrapassa limites definidos;
+    - insights mostram causas principais do desvio e recomendam ajuste por categoria.
+  - **Complexidade estimada:** média.
+  - **Valor de negócio:** aumenta previsibilidade financeira, incentiva uso recorrente da área de gastos e reforça o valor prático do app no planejamento completo do show/viagem.

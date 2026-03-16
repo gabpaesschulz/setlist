@@ -30,8 +30,11 @@ import {
   upsertReflection as dbUpsertReflection,
   seedDemoData,
   exportAllData,
+  getBackupImportPreview,
   importAllData,
+  importDataByEventIds,
   resetAllData,
+  type BackupImportPreviewItem,
   db,
 } from '@/lib/db'
 
@@ -77,7 +80,9 @@ interface EventsState {
 
   seedDemo: () => Promise<void>
   exportData: () => Promise<string>
+  previewImportData: (json: string) => Promise<BackupImportPreviewItem[]>
   importData: (json: string) => Promise<void>
+  importDataByEvents: (json: string, eventIds: string[]) => Promise<void>
   resetData: () => Promise<void>
 
   // ─── Computed Selectors ───────────────────────────────────────────────
@@ -354,10 +359,24 @@ export const useEventsStore = create<EventsState>((set, get) => ({
     return exportAllData()
   },
 
+  previewImportData: async (json) => {
+    return getBackupImportPreview(json)
+  },
+
   importData: async (json) => {
     set({ loading: true, error: null })
     try {
       await importAllData(json)
+      await get().loadAll()
+    } catch (err) {
+      set({ error: (err as Error).message, loading: false })
+    }
+  },
+
+  importDataByEvents: async (json, eventIds) => {
+    set({ loading: true, error: null })
+    try {
+      await importDataByEventIds(json, eventIds)
       await get().loadAll()
     } catch (err) {
       set({ error: (err as Error).message, loading: false })

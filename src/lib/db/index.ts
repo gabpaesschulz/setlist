@@ -11,6 +11,14 @@ import type {
   EventWithRelations,
 } from '@/types'
 import { getDemoData } from '@/lib/demo/data'
+import {
+  filterBackupByEventIds,
+  getBackupImportPreview,
+  parseBackupData,
+  type BackupImportPreviewItem,
+} from '@/lib/domain/backup-import'
+export { getBackupImportPreview }
+export type { BackupImportPreviewItem }
 
 // ─── Database class ───────────────────────────────────────────────────────────
 
@@ -385,7 +393,7 @@ export async function exportAllData(): Promise<string> {
 }
 
 export async function importAllData(jsonStr: string): Promise<void> {
-  const data = JSON.parse(jsonStr)
+  const data = parseBackupData(jsonStr)
 
   await db.transaction(
     'rw',
@@ -412,14 +420,84 @@ export async function importAllData(jsonStr: string): Promise<void> {
       ])
 
       await Promise.all([
-        data.events?.length ? db.events.bulkAdd(data.events) : Promise.resolve(),
-        data.tickets?.length ? db.tickets.bulkAdd(data.tickets) : Promise.resolve(),
-        data.travels?.length ? db.travels.bulkAdd(data.travels) : Promise.resolve(),
-        data.lodgings?.length ? db.lodgings.bulkAdd(data.lodgings) : Promise.resolve(),
-        data.expenses?.length ? db.expenses.bulkAdd(data.expenses) : Promise.resolve(),
-        data.itinerary?.length ? db.itinerary.bulkAdd(data.itinerary) : Promise.resolve(),
-        data.checklist?.length ? db.checklist.bulkAdd(data.checklist) : Promise.resolve(),
-        data.reflections?.length ? db.reflections.bulkAdd(data.reflections) : Promise.resolve(),
+        data.events.length ? db.events.bulkAdd(data.events) : Promise.resolve(),
+        data.tickets.length ? db.tickets.bulkAdd(data.tickets) : Promise.resolve(),
+        data.travels.length ? db.travels.bulkAdd(data.travels) : Promise.resolve(),
+        data.lodgings.length ? db.lodgings.bulkAdd(data.lodgings) : Promise.resolve(),
+        data.expenses.length ? db.expenses.bulkAdd(data.expenses) : Promise.resolve(),
+        data.itinerary.length ? db.itinerary.bulkAdd(data.itinerary) : Promise.resolve(),
+        data.checklist.length ? db.checklist.bulkAdd(data.checklist) : Promise.resolve(),
+        data.reflections.length ? db.reflections.bulkAdd(data.reflections) : Promise.resolve(),
+      ])
+    },
+  )
+}
+
+export async function importDataByEventIds(
+  jsonStr: string,
+  eventIds: string[],
+): Promise<void> {
+  if (eventIds.length === 0) {
+    throw new Error('Selecione ao menos um evento para restaurar.')
+  }
+
+  const fullData = parseBackupData(jsonStr)
+  const selectedData = filterBackupByEventIds(fullData, eventIds)
+  const selectedIds = selectedData.events.map((event) => event.id)
+
+  if (selectedIds.length === 0) {
+    throw new Error('Nenhum evento selecionado foi encontrado no backup.')
+  }
+
+  await db.transaction(
+    'rw',
+    [
+      db.events,
+      db.tickets,
+      db.travels,
+      db.lodgings,
+      db.expenses,
+      db.itinerary,
+      db.checklist,
+      db.reflections,
+    ],
+    async () => {
+      await Promise.all([
+        db.events.bulkDelete(selectedIds),
+        db.tickets.where('eventId').anyOf(selectedIds).delete(),
+        db.travels.where('eventId').anyOf(selectedIds).delete(),
+        db.lodgings.where('eventId').anyOf(selectedIds).delete(),
+        db.expenses.where('eventId').anyOf(selectedIds).delete(),
+        db.itinerary.where('eventId').anyOf(selectedIds).delete(),
+        db.checklist.where('eventId').anyOf(selectedIds).delete(),
+        db.reflections.where('eventId').anyOf(selectedIds).delete(),
+      ])
+
+      await Promise.all([
+        selectedData.events.length
+          ? db.events.bulkPut(selectedData.events)
+          : Promise.resolve(),
+        selectedData.tickets.length
+          ? db.tickets.bulkPut(selectedData.tickets)
+          : Promise.resolve(),
+        selectedData.travels.length
+          ? db.travels.bulkPut(selectedData.travels)
+          : Promise.resolve(),
+        selectedData.lodgings.length
+          ? db.lodgings.bulkPut(selectedData.lodgings)
+          : Promise.resolve(),
+        selectedData.expenses.length
+          ? db.expenses.bulkPut(selectedData.expenses)
+          : Promise.resolve(),
+        selectedData.itinerary.length
+          ? db.itinerary.bulkPut(selectedData.itinerary)
+          : Promise.resolve(),
+        selectedData.checklist.length
+          ? db.checklist.bulkPut(selectedData.checklist)
+          : Promise.resolve(),
+        selectedData.reflections.length
+          ? db.reflections.bulkPut(selectedData.reflections)
+          : Promise.resolve(),
       ])
     },
   )

@@ -4,6 +4,8 @@ import type { ItineraryItem } from "@/types";
 const mocks = vi.hoisted(() => ({
   dbUpdateItineraryItem: vi.fn(),
   dbDeleteItineraryItem: vi.fn(),
+  getBackupImportPreview: vi.fn(),
+  importDataByEventIds: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -26,7 +28,9 @@ vi.mock("@/lib/db", () => ({
   upsertReflection: vi.fn(),
   seedDemoData: vi.fn(),
   exportAllData: vi.fn(),
+  getBackupImportPreview: mocks.getBackupImportPreview,
   importAllData: vi.fn(),
+  importDataByEventIds: mocks.importDataByEventIds,
   resetAllData: vi.fn(),
   db: {},
 }));
@@ -70,5 +74,36 @@ describe("useEventsStore itinerary actions", () => {
 
     expect(mocks.dbDeleteItineraryItem).toHaveBeenCalledWith(baseItem.id);
     expect(useEventsStore.getState().itinerary).toEqual([]);
+  });
+
+  it("retorna prévia de importação sem alterar estado", async () => {
+    const preview = [
+      {
+        id: "event-1",
+        title: "Festival",
+        artist: "Banda X",
+        date: "2026-10-10",
+        city: "São Paulo",
+        venue: "Allianz",
+      },
+    ];
+    mocks.getBackupImportPreview.mockReturnValue(preview);
+
+    const result = await useEventsStore.getState().previewImportData('{"version":1}');
+
+    expect(mocks.getBackupImportPreview).toHaveBeenCalledWith('{"version":1}');
+    expect(result).toEqual(preview);
+    expect(useEventsStore.getState().loading).toBe(false);
+  });
+
+  it("restaura eventos selecionados e recarrega dados", async () => {
+    const loadAllSpy = vi.spyOn(useEventsStore.getState(), "loadAll").mockResolvedValue(undefined);
+    mocks.importDataByEventIds.mockResolvedValue(undefined);
+
+    await useEventsStore.getState().importDataByEvents('{"version":1}', ["event-1", "event-2"]);
+
+    expect(mocks.importDataByEventIds).toHaveBeenCalledWith('{"version":1}', ["event-1", "event-2"]);
+    expect(loadAllSpy).toHaveBeenCalled();
+    loadAllSpy.mockRestore();
   });
 });
