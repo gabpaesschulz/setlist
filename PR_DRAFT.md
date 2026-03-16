@@ -1,29 +1,28 @@
-# feat: centraliza hidratação do store e remove loadAll redundante
+# feat: endurece cache do service worker com política same-origin
 
 ## Tarefa
 
-- ROAD-201 — Centralização de hidratação do store e remoção de `loadAll` redundante
+- ROAD-2 — Endurecer política de cache do Service Worker
 
 ## Resumo das mudanças
 
-- Introdução de hidratação idempotente no `events-store` com `ensureHydrated`, `refreshAll` e deduplicação de chamadas concorrentes.
-- Centralização da hidratação inicial no `AppShell`.
-- Remoção de `loadAll` redundante nas páginas Home, Gastos e Insights.
-- Ajuste dos fluxos de Import, Restore de snapshot e Seed para usar refresh explícito pós-mutação.
-- Proteção de telas de evento para evitar falso estado "não encontrado" durante bootstrap inicial.
-- Inclusão de testes unitários/integrados para hidratação e atualização de `test:quick`.
-- Atualização de README e ROADMAP com o novo fluxo e sugestões pós-análise técnica.
+- Atualização da política de cache em `public/sw.js` para aceitar apenas requests `GET` same-origin com destinos permitidos.
+- Bloqueio explícito de rotas sensíveis (`/api`, `/_next/image`, `/artist-image`) para reduzir superfície de risco.
+- Estratégia `network-first` para navegação e `stale-while-revalidate` para recursos cacheáveis.
+- Retenção de cache runtime com limite de entradas para prevenir crescimento indefinido.
+- Inclusão de testes unitários e de integração para sucesso, falha de rede e edge cases de interceptação.
+- Atualização de `test:quick`, README e ROADMAP com a nova entrega.
 
 ## Evidências de teste
 
-- `npx vitest run src/stores/events-store.hydration.test.ts src/hooks/use-events-store.test.tsx src/components/app-shell/app-shell.integration.test.tsx src/stores/events-store.itinerary.test.ts src/stores/events-store.audit.integration.test.ts --coverage`
+- `npm run test:coverage -- src/lib/domain/service-worker-cache-policy.test.ts src/lib/db/service-worker.integration.test.ts`
 - `npm run test:quick`
 - `npm run lint`
 
 ## Cobertura
 
-- Cobertura dos novos testes de hidratação validada em cenários de sucesso, concorrência e refresh explícito.
-- Cobertura total do subset executado: 12 testes passando.
+- Cobertura de `sw.js` validada em 90% de statements e 83.33% de branches.
+- Testes cobrindo casos de sucesso, erro de rede, fallback offline e edge cases de bloqueio por política.
 
 ## Checklist
 

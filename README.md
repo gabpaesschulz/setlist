@@ -43,6 +43,7 @@ A aplicação foi desenhada para acompanhar o ciclo completo de cada evento:
 - Linha do tempo operacional com histórico de alterações por evento.
 - Simulador de compra antecipada com cenários conservador, provável e otimista.
 - Hidratação centralizada de estado para reduzir leituras redundantes no IndexedDB.
+- Política de cache PWA endurecida com same-origin, retenção runtime e bloqueio de rotas sensíveis.
 
 ## Pré-requisitos
 
@@ -75,7 +76,7 @@ npm run dev
 Este projeto **não exige variáveis de ambiente obrigatórias** para rodar localmente no fluxo principal.
 
 Configurações úteis de qualidade e execução:
-- `npm run prepare`: instala os hooks do Husky (pre-commit com lint-staged + testes relacionados).
+- `npm run prepare`: instala os hooks do Husky (pre-commit com lint-staged, lint global e suíte rápida).
 - `npm run lint`: executa validação de lint.
 - `npm run lint:fix`: corrige automaticamente problemas de lint aplicáveis.
 
@@ -101,6 +102,12 @@ Executar suíte rápida crítica:
 
 ```bash
 npm run test:quick
+```
+
+Executar cobertura focada na política de cache do Service Worker:
+
+```bash
+npm run test:coverage -- src/lib/domain/service-worker-cache-policy.test.ts src/lib/db/service-worker.integration.test.ts
 ```
 
 Gerar build de produção:

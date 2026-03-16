@@ -41,6 +41,7 @@
 - **Critérios de sucesso mensuráveis:** p95 de abertura da Home reduzido em >= 30%; apenas 1 hidratação inicial por ciclo de abertura; 0 regressões em import/restore/reset na suíte de testes.
 
 ### 2) Endurecer política de cache do Service Worker
+- **Status atual:** entregue na branch `feature/ROAD-2-endurecer-cache-sw`.
 - **Descrição detalhada:** limitar cache a same-origin e recursos permitidos, aplicar estratégia de revalidação e política de retenção para evitar crescimento descontrolado.
 - **Justificativa do impacto no usuário:** melhora estabilidade offline e reduz riscos de comportamento inesperado com conteúdo externo.
 - **Estimativa de esforço:** 3 SP (baixo-médio).
@@ -107,6 +108,9 @@
 | ROAD-10 | Fatiar `events-store` em slices por domínio | Alto | Médio | P1 |
 | ROAD-11 | Harden de API de imagem + circuit breaker | Médio-Alto | Médio | P2 |
 | ROAD-12 | Criptografia opcional de backup com UX guiada | Alto | Alto | P2 |
+| ROAD-13 | Restringir `next/image` a allowlist explícita | Alto | Baixo | P0 |
+| ROAD-14 | Limitar tamanho e validar backup antes do parse | Médio-Alto | Baixo | P1 |
+| ROAD-15 | Padronizar catálogo de erros acionáveis + telemetria | Médio | Baixo-Médio | P1 |
 
 ### ROAD-9 — Observabilidade de hidratação com SLO p95
 - **Descrição detalhada do problema/melhoria:** falta telemetria operacional para medir latência real de hidratação em produção local-first; sem métrica não há baseline contínuo de regressão.
@@ -139,3 +143,27 @@
 - **Análise de riscos técnicos:** risco alto de incompatibilidade de formato e suporte; mitigar com versionamento de payload e fluxo de recuperação.
 - **Valor de negócio quantificado:** redução estimada de 60–80% no risco de exposição de dados em arquivos compartilhados e aumento de confiança em recursos de backup.
 - **Dependências:** versionamento de backup, fluxo de settings e testes de compatibilidade retroativa.
+
+### ROAD-13 — Restringir `next/image` a allowlist explícita
+- **Descrição detalhada do problema/melhoria:** configuração atual permite hosts remotos amplos para imagens e aumenta exposição a conteúdo externo não auditado.
+- **Critérios de aceitação mensuráveis:** permitir somente domínios aprovados por produto; 0 carregamento por host não autorizado em auditoria de smoke; 0 regressão de render para capas válidas.
+- **Complexidade estimada:** 2 SP.
+- **Análise de riscos técnicos:** risco baixo de quebra em host legítimo não mapeado; mitigar com inventário prévio e fallback de placeholder.
+- **Valor de negócio quantificado:** redução estimada de 30–40% no risco operacional ligado a mídia externa e melhora de 10% na previsibilidade de carregamento.
+- **Dependências:** levantamento dos domínios reais de capa e ajuste de `next.config.ts`.
+
+### ROAD-14 — Limitar tamanho e validar backup antes do parse
+- **Descrição detalhada do problema/melhoria:** import de backup lê payload completo sem limite explícito de tamanho, elevando risco de travamento por arquivo anômalo.
+- **Critérios de aceitação mensuráveis:** bloquear import acima do limite definido (ex.: 5 MB) com mensagem acionável; validar estrutura mínima antes de parse profundo; reduzir em >=80% falhas por payload inválido em testes de robustez.
+- **Complexidade estimada:** 3 SP.
+- **Análise de riscos técnicos:** risco baixo de rejeitar backup legítimo grande; mitigar com limite configurável e instrução de segmentação.
+- **Valor de negócio quantificado:** redução de 20–30% em incidentes de import problemático e queda de 15% em tentativas repetidas sem sucesso no fluxo de restore.
+- **Dependências:** `settings/page.tsx`, `backup-import` e padronização de mensagens de erro.
+
+### ROAD-15 — Padronizar catálogo de erros acionáveis + telemetria
+- **Descrição detalhada do problema/melhoria:** exceções com `catch {}` silencioso dificultam diagnóstico e aumentam tempo de suporte em fluxos críticos.
+- **Critérios de aceitação mensuráveis:** mapear >=90% dos erros críticos para mensagens acionáveis; registrar tipo/contexto mínimo em telemetria local; reduzir em >=25% o tempo de diagnóstico em testes internos de suporte.
+- **Complexidade estimada:** 5 SP.
+- **Análise de riscos técnicos:** risco médio de ruído de logs; mitigar com taxonomia enxuta e throttling por tipo.
+- **Valor de negócio quantificado:** redução estimada de 20–30% no tempo de investigação de falhas e melhoria de 10–15% na conclusão de fluxos de settings/backup.
+- **Dependências:** camada comum de erros de domínio, notificações/toasts e hooks de observabilidade.
