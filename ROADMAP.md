@@ -182,6 +182,20 @@
   - **Impacto x esforço:** alto impacto / médio esforço.
   - **Status com stakeholders:** pendente alinhamento técnico-produto.
 
+- [ ] Telemetria local de hidratação com SLO de abertura da home
+  - **Descrição detalhada:** instrumentar tempo de hidratação inicial e refresh de store com métricas locais (p50/p95), incluindo diagnóstico de gargalos por etapa (IndexedDB, serialização e render) para sustentar decisões de performance com dados.
+  - **Critérios de aceitação mensuráveis:**
+    - app registra duração de hidratação inicial e refresh em pelo menos 95% das execuções locais;
+    - painel técnico em Configurações exibe p50/p95 e últimos 20 ciclos;
+    - alerta visual é disparado quando p95 ultrapassar 1200ms por 3 ciclos consecutivos;
+    - testes automatizados cobrem coleta, agregação e regra de alerta com cobertura >= 80% no módulo de telemetria.
+  - **Story points:** 5.
+  - **Riscos técnicos:** overhead de instrumentação em dispositivos mais fracos e risco de ruído estatístico com base pequena.
+  - **Valor de negócio quantificado:** redução estimada de 25% no tempo de diagnóstico de regressões de performance e queda de ~15% em reclamações de lentidão percebida.
+  - **Dependências:** definição de baseline de dispositivo de referência e alinhamento de UX para exposição de métricas técnicas.
+  - **Impacto x esforço:** médio-alto impacto / baixo-médio esforço.
+  - **Status com stakeholders:** pendente alinhamento para entrada no backlog oficial.
+
 ## Priorização recomendada (impacto vs esforço)
 
 - **P1:** Centralização de hidratação do store e remoção de `loadAll` redundante (alto impacto / baixo-médio esforço)

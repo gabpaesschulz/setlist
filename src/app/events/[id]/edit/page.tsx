@@ -19,10 +19,11 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
   const checklist = useEventsStore((s) => s.checklist)
   const reflections = useEventsStore((s) => s.reflections)
   const loading = useEventsStore((s) => s.loading)
+  const isHydrated = useEventsStore((s) => s.isHydrated)
 
   const event = events.find((e) => e.id === id)
 
-  if (loading) {
+  if (!isHydrated && loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-pulse text-muted-foreground">Carregando...</div>
