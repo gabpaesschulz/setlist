@@ -95,3 +95,14 @@ src/
     - operação de backup/restauração mantém compatibilidade com estrutura de dados atual.
   - **Complexidade estimada:** média/alta.
   - **Valor de negócio:** reduz risco percebido de perda de dados, aumenta confiança no uso contínuo e melhora retenção de usuários que dependem do app como fonte principal de planejamento.
+
+- [ ] Sincronização P2P local-first (WebRTC + CRDT)
+  - **Descrição detalhada:** permitir sincronização opcional entre dois dispositivos do usuário usando pareamento por QR Code (WebRTC data channel) e resolução de conflitos via CRDT (ex.: Yjs). 100% E2E, sem servidor central, com troca apenas durante sessão ativa.
+  - **Critérios de aceitação:**
+    - pareamento simples: usuário abre “Sincronizar” em ambos os dispositivos e escaneia o QR;
+    - alterações em eventos/itens aplicam-se no outro dispositivo em até 2s;
+    - conflitos são resolvidos automaticamente e determinísticos (sem perda de dados);
+    - nenhuma credencial é exposta; conexão fecha ao encerrar sessão; opção de “somente receber”;
+    - funciona offline local (mesma rede) e via NAT traversal (STUN público).
+  - **Complexidade estimada:** alta.
+  - **Valor de negócio:** entrega sincronização multi-dispositivo preservando o posicionamento “local-first/privacidade”, reduz dependência de provedores (iCloud/Drive) e abre caminho para colaboração limitada no futuro.
