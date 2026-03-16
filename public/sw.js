@@ -49,3 +49,29 @@ self.addEventListener('fetch', (event) => {
       ),
   );
 });
+
+/* ─── Notifications: click handler ─────────────────────────────────────────── */
+self.addEventListener('notificationclick', (event) => {
+  const notification = event.notification;
+  const url = notification?.data?.url || '/';
+  notification.close();
+
+  event.waitUntil(
+    (async () => {
+      const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      // Focus an existing tab if already open
+      for (const client of clientsList) {
+        // @ts-ignore
+        if (client.url && client.url.includes(self.origin)) {
+          // @ts-ignore
+          await client.focus();
+          // @ts-ignore
+          await client.navigate(url);
+          return;
+        }
+      }
+      // Otherwise open a new window
+      await self.clients.openWindow(url);
+    })(),
+  );
+});

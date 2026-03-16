@@ -3,6 +3,7 @@
 import { ReactNode, useEffect } from 'react';
 import { BottomNav } from '@/components/navigation/bottom-nav';
 import { useEventsStore } from '@/stores/events-store';
+import { Notifications } from '@/lib/notifications';
 
 interface AppShellProps {
   children: ReactNode;
@@ -30,6 +31,22 @@ export function AppShell({ children }: AppShellProps) {
         });
     }
   }, []);
+
+  // ── Run reminders when events are loaded and on day change ────────────────────
+  const events = useEventsStore((s) => s.events);
+  useEffect(() => {
+    if (!events.length) return;
+    // Fire-and-forget; ignore result
+    Notifications.runRemindersForEvents(events).catch(() => {});
+    // Also re-check at local midnight boundaries
+    const msUntilNextDay =
+      new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 1).getTime() -
+      Date.now();
+    const timer = setTimeout(() => {
+      Notifications.runRemindersForEvents(events).catch(() => {});
+    }, Math.max(1000, msUntilNextDay));
+    return () => clearTimeout(timer);
+  }, [events]);
 
   return (
     <div className="relative flex min-h-dvh flex-col bg-background">

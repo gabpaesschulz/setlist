@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTheme } from 'next-themes'
 import {
   Sun, Moon, Monitor, Download, Upload, RotateCcw, Sparkles,
@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { APP_VERSION } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/use-toast'
+import { Notifications } from '@/lib/notifications'
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
@@ -26,6 +27,9 @@ export default function SettingsPage() {
   const importData = useEventsStore((s) => s.importData)
   const resetData = useEventsStore((s) => s.resetData)
   const seedDemo = useEventsStore((s) => s.seedDemo)
+  const [notifEnabled, setNotifEnabled] = useState(false)
+  const [notifSupported, setNotifSupported] = useState(false)
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>('unsupported')
 
   const handleExport = async () => {
     try {
@@ -68,6 +72,45 @@ export default function SettingsPage() {
     await seedDemo()
     setDemoOpen(false)
     toast({ title: 'Dados demo carregados!', description: '8 eventos de exemplo foram adicionados.' })
+  }
+
+  const refreshNotifState = () => {
+    const supported = typeof window !== 'undefined' && 'Notification' in window
+    setNotifSupported(supported)
+    if (!supported) {
+      setNotifPermission('unsupported')
+      setNotifEnabled(false)
+      return
+    }
+    setNotifPermission(Notification.permission)
+    setNotifEnabled(Notifications.isEnabled())
+  }
+
+  useEffect(() => {
+    refreshNotifState()
+    // Keep in sync if user changes permission outside the app
+    const iv = setInterval(() => refreshNotifState(), 3000)
+    return () => clearInterval(iv)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleEnableNotifications = async () => {
+    if (!notifSupported) return
+    const granted = await Notifications.ensurePermission()
+    setNotifPermission(granted ? 'granted' : Notification.permission)
+    if (granted) {
+      Notifications.setEnabled(true)
+      setNotifEnabled(true)
+      toast({ title: 'Lembretes ativados!', description: 'Você receberá alertas D-7 e D-1.' })
+    } else {
+      toast({ title: 'Permissão negada', description: 'Não foi possível ativar as notificações.', variant: 'destructive' })
+    }
+  }
+
+  const handleDisableNotifications = () => {
+    Notifications.setEnabled(false)
+    setNotifEnabled(false)
+    toast({ title: 'Lembretes desativados', description: 'Você não receberá mais alertas.' })
   }
 
   return (
@@ -142,6 +185,40 @@ export default function SettingsPage() {
               onClick={() => setResetOpen(true)}
               destructive
             />
+          </div>
+        </Section>
+
+        {/* Notificações */}
+        <Section title="Notificações" icon={<Shield className="w-4 h-4" />}>
+          <div className="p-4">
+            {!notifSupported ? (
+              <p className="text-sm text-muted-foreground">
+                Seu navegador não suporta notificações.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Receba lembretes sobre seus eventos (D-7 e D-1).
+                </p>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <p className="font-medium">Status: {notifEnabled ? 'Ativado' : 'Desativado'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Permissão: {notifPermission}
+                    </p>
+                  </div>
+                  {notifEnabled ? (
+                    <Button variant="outline" onClick={handleDisableNotifications}>
+                      Desativar
+                    </Button>
+                  ) : (
+                    <Button onClick={handleEnableNotifications}>
+                      Ativar lembretes
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </Section>
 

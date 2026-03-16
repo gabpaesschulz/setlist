@@ -67,7 +67,7 @@ src/
 ## Roadmap
 
 - [ ] Sync via iCloud/Google Drive
-- [ ] Notificações push (D-7, D-1)
+- [x] Notificações (D-7, D-1) via PWA
 - [x] Upload de imagem de capa
 - [x] Importação do Sympla/Eventim via URL
 - [ ] Widget de countdown iOS
@@ -75,6 +75,14 @@ src/
 - [x] Detectar evento duplicado ao importar por link compartilhado
 - [x] Exportar evento para calendário (.ics)
 - [x] Editar e remover item do roteiro com gesto de swipe
+
+## Notificações (D-7, D-1)
+
+- Ative em Configurações → Notificações → “Ativar lembretes”.
+- O app dispara lembretes no dia D-7 e D-1 às 9h (horário local) quando você abrir o app; quando possível, usa o Service Worker para exibir a notificação.
+- Ao tocar na notificação, o app abre diretamente a página do evento.
+- Lembretes são deduplicados por evento e janela (D-7/D-1).
+- Limitações: navegadores móveis e iOS têm restrições para agendamento em background. O app verifica as janelas ao abrir e em viradas de dia.
 
 ### Oportunidade de melhoria sugerida
 
